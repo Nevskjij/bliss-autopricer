@@ -1,5 +1,5 @@
-const express = require('express');
 const fs = require('fs');
+const express = require('express');
 
 const router = express.Router();
 
@@ -13,7 +13,6 @@ router.get('/:sku', async (req, res) => {
 
   fs.readFile(PRICELIST_PATH, 'utf8', (err, data) => {
     if (err) {
-      // req.reject etc.
       return res.status(400).json({ error: 'Failed to load pricelist.' });
     }
 
@@ -51,7 +50,7 @@ router.get('/', (req, res) => {
 
     data = JSON.parse(data);
 
-    // Send pricelist to requestor.
+    // Send pricelist to requester.
     return res.status(200).json(data);
   });
 });
@@ -85,7 +84,7 @@ router.post('/add/:name', (req, res) => {
           break;
         }
       }
-    } catch (e) {
+    } catch {
       return res.sendStatus(400);
     }
 
@@ -128,7 +127,7 @@ router.post('/delete/:name', (req, res) => {
           break;
         }
       }
-    } catch (e) {
+    } catch {
       return res.sendStatus(400);
     }
 

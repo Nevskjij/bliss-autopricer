@@ -1,7 +1,10 @@
+const fs = require('fs');
 const ReconnectingWebSocket = require('reconnecting-websocket');
 const ws = require('ws');
-const fs = require('fs');
-const path = require('path');
+
+let insertQueue = [];
+let insertTimer = null;
+const INSERT_BATCH_INTERVAL = 10000; // ms
 
 function logWebSocketEvent(logFile, message) {
   const timestamp = new Date().toISOString();
@@ -10,14 +13,16 @@ function logWebSocketEvent(logFile, message) {
 
 function initBptfWebSocket({
   getAllowedItemNames,
+  allowAllItems,
   schemaManager,
   Methods,
-  insertListing,
+  insertListingsBatch,
   deleteRemovedListing,
   excludedSteamIds,
   excludedListingDescriptions,
   blockedAttributes,
   logFile,
+  onListingUpdate,
 }) {
   const rws = new ReconnectingWebSocket('wss://ws.backpack.tf/events/', undefined, {
     WebSocket: ws,
@@ -26,19 +31,39 @@ function initBptfWebSocket({
     },
   });
 
+  async function flushInsertQueue() {
+    if (insertQueue.length === 0) {
+      return;
+    }
+    try {
+      await insertListingsBatch(insertQueue);
+    } catch (err) {
+      console.error('[WebSocket] Batch insert error:', err);
+    }
+    insertQueue = [];
+    insertTimer = null;
+  }
+
+  function queueInsertListing(...args) {
+    insertQueue.push(args);
+    if (!insertTimer) {
+      insertTimer = setTimeout(flushInsertQueue, INSERT_BATCH_INTERVAL);
+    }
+  }
+
   function handleEvent(e) {
     if (!e.payload || !e.payload.item || !e.payload.item.name) {
       // Optionally log ignored events for debugging:
       console.log('[WebSocket] Ignored event:', e);
       return;
     }
-    if (getAllowedItemNames().has(e.payload.item.name)) {
+    if (allowAllItems() || getAllowedItemNames().has(e.payload.item.name)) {
       let response_item = e.payload.item;
       let steamid = e.payload.steamid;
       let intent = e.payload.intent;
       switch (e.event) {
-        case 'listing-update':
-          console.log('[WebSocket] Recieved a socket listing update for : ' + response_item.name);
+        case 'listing-update': {
+          //          console.log('[WebSocket] Received a socket listing update for : ' + response_item.name);
 
           let currencies = e.payload.currencies;
           let listingDetails = e.payload.details;
@@ -85,7 +110,8 @@ function initBptfWebSocket({
                     `| UPDATING PRICES |: Couldn't price ${response_item.name}. Issue with retrieving this items defindex.`
                   );
                 }
-                insertListing(response_item, sku, currencies, intent, steamid);
+                queueInsertListing(response_item, sku, currencies, intent, steamid);
+                onListingUpdate(sku);
               } catch (e) {
                 console.log(e);
                 console.log("Couldn't create a price for " + response_item.name);
@@ -93,19 +119,23 @@ function initBptfWebSocket({
             }
           }
           break;
-        case 'listing-delete':
-          console.log('[WebSocket] Recieved a socket listing delete for : ' + response_item.name);
+        }
+        case 'listing-delete': {
+          //          console.log('[WebSocket] Received a socket listing delete for : ' + response_item.name);
 
           try {
             deleteRemovedListing(steamid, response_item.name, intent);
-          } catch (e) {
+          } catch {
             return;
           }
           break;
+        }
       }
     }
   }
 
+  // eslint-disable-next-line spellcheck/spell-checker
+  // eslint-disable-next-line no-unused-vars
   rws.addEventListener('open', (event) => {
     const msg = '[WebSocket] Connected to bptf socket.';
     console.log(msg);

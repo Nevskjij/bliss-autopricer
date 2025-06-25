@@ -1,10 +1,8 @@
-const express = require('express');
-const path = require('path');
-const { loadJson } = require('../utils');
+/* eslint-disable spellcheck/spell-checker */
 const { db } = require('../../bptf-autopricer');
 const renderPage = require('../layout');
 
-module.exports = (app, config) => {
+module.exports = (app) => {
   app.get('/key-prices', async (req, res) => {
     try {
       const data = await db.any(`

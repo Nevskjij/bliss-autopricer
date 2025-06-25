@@ -1,6 +1,6 @@
 async function insertKeyPrice(db, keyobj, buyPrice, sellPrice, timestamp) {
-  const lowerBound = keyobj.metal * 0.9;
-  const upperBound = keyobj.metal * 1.1;
+  const lowerBound = keyobj.metal * 0.8; // 20% lower than the key's metal value
+  const upperBound = keyobj.metal * 1.2; // 20% higher than the key's metal value
 
   if (
     buyPrice < lowerBound ||
@@ -18,7 +18,7 @@ async function insertKeyPrice(db, keyobj, buyPrice, sellPrice, timestamp) {
             VALUES ($1, $2, $3, $4)`,
       ['5021;6', buyPrice, sellPrice, timestamp]
     );
-  } catch (err) {
+  } catch {
     console.error('Error inserting key price');
   }
 }
@@ -27,7 +27,7 @@ async function cleanupOldKeyPrices(db) {
   try {
     await db.none("DELETE FROM key_prices WHERE created_at < NOW() - INTERVAL '30 days'");
     console.log('Cleaned up key prices older than 30 days.');
-  } catch (err) {
+  } catch {
     console.error('Error cleaning up old key prices');
   }
 }
@@ -68,19 +68,12 @@ async function adjustPrice({
     socketIO.emit('price', updatedItem);
 
     console.log(`Price for ${name} updated. Buy: ${newBuyPrice}, Sell: ${newSellPrice}`);
-  } catch (err) {
+  } catch {
     console.error('Error adjusting price');
   }
 }
 
-async function checkKeyPriceStability({
-  db,
-  Methods,
-  keyobj,
-  adjustPrice,
-  sendPriceAlert,
-  socketIO,
-}) {
+async function checkKeyPriceStability({ db, Methods, adjustPrice, sendPriceAlert, socketIO }) {
   const CHANGE_THRESHOLD = 0.33;
   const STD_THRESHOLD = 0.66; // You can move this to config if you want
   try {
@@ -95,7 +88,6 @@ async function checkKeyPriceStability({
             WHERE sku = '5021;6'
               AND created_at BETWEEN NOW() - INTERVAL '3 hours' AND NOW();
         `);
-
     const [{ avg_buy: buyB, avg_sell: sellB }] = await db.any(`
             SELECT
                 AVG(buy_price_metal)::float AS avg_buy,
@@ -105,6 +97,7 @@ async function checkKeyPriceStability({
               AND created_at BETWEEN NOW() - INTERVAL '6 hours' AND NOW() - INTERVAL '3 hours';
         `);
 
+    // eslint-disable-next-line eqeqeq
     if (buyA == null || sellA == null || buyB == null || sellB == null) {
       console.log('Not enough data in one of the 3-hour windows—skipping volatility check.');
       return;

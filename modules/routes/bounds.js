@@ -1,9 +1,9 @@
-const express = require('express');
 const path = require('path');
+const express = require('express');
 const { loadJson, saveJson } = require('../utils');
 const renderPage = require('../layout');
 
-module.exports = function (app, config) {
+module.exports = function (app) {
   const router = express.Router();
   const itemListPath = path.resolve(__dirname, '../../files/item_list.json');
 

@@ -1,12 +1,10 @@
-const express = require('express');
 const path = require('path');
+const express = require('express');
 const { loadJson } = require('../utils');
 const renderPage = require('../layout');
 
 module.exports = function (app, config) {
   const router = express.Router();
-
-  const CONFIG_PATH = path.resolve(__dirname, '../../pricerConfig.json');
   const thresholdSec = config.ageThresholdSec;
 
   const pricelistPath = path.resolve(__dirname, '../../files/pricelist.json');
