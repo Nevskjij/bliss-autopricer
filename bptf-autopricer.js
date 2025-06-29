@@ -45,6 +45,16 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir);
 }
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+  // Optionally: process.exit(1); // Only if you want to force a restart
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  // Optionally: process.exit(1); // Only if you want to force a restart
+});
+
 // Steam API key is required for the schema manager to work.
 const schemaManager = new Schema({
   apiKey: config.steamAPIKey,
@@ -67,8 +77,7 @@ const fallbackOntoPricesTf = config.fallbackOntoPricesTf;
 const updatedSkus = new Set();
 
 // Create database instance for pg-promise.
-const createDb = require('./modules/db');
-const { db, pgp } = createDb(config);
+const { db, pgp } = require('./modules/dbInstance');
 
 if (fs.existsSync(SCHEMA_PATH)) {
   // A cached schema exists.
@@ -431,7 +440,7 @@ schemaManager.init(async function (err) {
   console.log(`Key object initialised to bptf base: ${JSON.stringify(keyobj)}`);
   // Get external pricelist.
   //external_pricelist = await Methods.getExternalPricelist();
-  if (config.priceAllItems) {
+  if (config.initialSeedUnpriced && config.priceAllItems) {
     await emitDefaultBptfPricesForUnpriceableItems();
     console.log(`Default BPTF prices emitted for non price able items.`);
   }

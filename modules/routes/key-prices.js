@@ -1,5 +1,5 @@
 /* eslint-disable spellcheck/spell-checker */
-const { db } = require('../../bptf-autopricer');
+const { db } = require('../dbInstance');
 const renderPage = require('../layout');
 
 module.exports = (app) => {

@@ -159,22 +159,22 @@ const deleteOldListings = async (db) => {
     let age;
     switch (band) {
       case 'veryActive':
-        age = 35 * 60;
+        age = 120 * 60;
         break;
       case 'active':
-        age = 2 * 3600;
+        age = 4 * 3600;
         break;
       case 'moderatelyActive':
-        age = 6 * 3600;
+        age = 8 * 3600;
         break;
       case 'somewhatActive':
-        age = 24 * 3600;
+        age = 48 * 3600;
         break;
       case 'lowActive':
-        age = 3 * 24 * 3600;
+        age = 5 * 24 * 3600;
         break;
       case 'rare':
-        age = 5 * 24 * 3600;
+        age = 7 * 24 * 3600;
         break;
     }
     await db.none(
@@ -191,22 +191,22 @@ const deleteOldListings = async (db) => {
     let age;
     switch (band) {
       case 'veryActive':
-        age = 35 * 60;
+        age = 120 * 60;
         break;
       case 'active':
-        age = 2 * 3600;
+        age = 4 * 3600;
         break;
       case 'moderatelyActive':
-        age = 6 * 3600;
+        age = 8 * 3600;
         break;
       case 'somewhatActive':
-        age = 24 * 3600;
+        age = 48 * 3600;
         break;
       case 'lowActive':
-        age = 3 * 24 * 3600;
+        age = 5 * 24 * 3600;
         break;
       case 'rare':
-        age = 5 * 24 * 3600;
+        age = 7 * 24 * 3600;
         break;
     }
     await db.none(
