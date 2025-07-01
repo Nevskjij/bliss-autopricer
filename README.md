@@ -18,6 +18,7 @@ A custom pricer that generates item prices by analysing live and snapshot data f
 ## Features
 
 - **Automated Pricing:** Generates item prices using real-time and snapshot [backpack.tf](https://backpack.tf/) listing data, ensuring a profit margin and performing various sanity checks.
+- **Robust Fallback Pricing:** If an item cannot be priced from listings, the pricer will attempt to fetch and convert Steam Community Market (SCM) prices (with configurable margin and rounding), and only fall back to Backpack.tf (BPTF) prices as a last resort. This fallback system supports all item types, including unusuals, killstreakers, and special attributes.
 - **Baseline Comparison:** Compares generated prices against [Prices.tf](https://github.com/prices-tf) and disregards prices that exceed configured percentage thresholds.
 - **Trusted/Blacklisted Steam IDs:** Prioritises listings from trusted bots and filters out untrusted bots when calculating prices. Fully configurable.
 - **Excluded Listing Descriptions:** Filters out listings with descriptions containing configured keywords (e.g., spells).
@@ -25,6 +26,20 @@ A custom pricer that generates item prices by analysing live and snapshot data f
 - **API Functionality:** Add/delete items for auto-pricing and retrieve prices via the API.
 - **Socket.IO Server:** Emits item prices to listeners in a format compatible with [TF2 Auto Bot](https://github.com/TF2Autobot/tf2autobot).
 - **Price Watcher Web Interface:** Dashboard to monitor item data freshness, view outdated entries, and manage your bot's selling pricelist.
+
+---
+
+## Pricing Logic & Fallback System
+
+The pricer uses a robust multi-stage fallback system to ensure all items (including rare, unusual, and illiquid items) are priced as reliably as possible:
+
+1. **Own Listings:** Attempt to price using live buy/sell listings from trusted sources.
+2. **Steam Community Market (SCM) Fallback:** If not enough listings are available, the pricer fetches the item's SCM price, converts it to keys/metal (using the current key price), applies configurable margins (`scmMarginBuy`, `scmMarginSell`), and always rounds to the nearest scrap. This fallback is robust for all item types, including unusuals, killstreakers, australium, and special attributes.
+3. **Backpack.tf (BPTF) Fallback:** If SCM pricing is unavailable, the pricer falls back to BPTF prices as a last resort.
+
+- **Batching & Rate Limiting:** SCM fallback requests are batched and rate-limited using [`p-limit`](https://www.npmjs.com/package/p-limit) to avoid Steam rate limits and ensure stability, even with large numbers of unpriced items.
+- **Rounding:** All fallback prices (SCM or BPTF) are always rounded to the nearest scrap for consistency.
+- **Source:** All fallback prices use `source: 'bptf'` for compatibility with TF2Autobot and other bots.
 
 ---
 
@@ -181,9 +196,15 @@ Holds core pricer settings:
     "Australium Gold": 15185211,
     "Team Spirit": 12073019,
     "..."
-  }
+  },
+  "scmMarginBuy": 0.05, // (optional) Margin to subtract from SCM price when buying (e.g., 0.05 = 5% below SCM)
+  "scmMarginSell": 0.05 // (optional) Margin to add to SCM price when selling (e.g., 0.05 = 5% above SCM)
 }
 ```
+
+- `scmMarginBuy` and `scmMarginSell` control the buy/sell margins applied to fallback SCM prices. If omitted, margins default to 0 (no adjustment).
+- All fallback prices are always rounded to the nearest scrap for consistency.
+- See the [Pricing Logic & Fallback System](#pricing-logic--fallback-system) section for details.
 
 ### `pricerConfig.json`
 

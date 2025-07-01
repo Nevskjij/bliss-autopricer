@@ -492,6 +492,97 @@ schemaManager.init(async function (err) {
 
   startPriceWatcher();
   console.log('PriceWatcher started.');
+
+  // After main pricing, fallback for unpriced items
+  async function fallbackForUnpricedItems() {
+    const allItemNames = getAllPricedItemNamesWithEffects(external_pricelist, schemaManager);
+    const pricelist = JSON.parse(fs.readFileSync(PRICELIST_PATH, 'utf8'));
+    const pricedSkus = new Set(pricelist.items.map((i) => i.sku));
+    const pricableSkus = new Set(await getPricableItems(db));
+    const unpricedNames = allItemNames.filter((name) => {
+      const sku = schemaManager.schema.getSkuFromName(name);
+      return sku && !pricedSkus.has(sku) && !pricableSkus.has(sku);
+    });
+    const BATCH_SIZE = 10;
+    const RATE_LIMIT_DELAY = 1500; // ms between batches
+    const limit = pLimit(3); // Max 3 concurrent SCM requests
+    for (let i = 0; i < unpricedNames.length; i += BATCH_SIZE) {
+      const batch = unpricedNames.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map((name) =>
+          limit(async () => {
+            const sku = schemaManager.schema.getSkuFromName(name);
+            if (!sku) {
+              return;
+            }
+            // Try SCM fallback
+            try {
+              const hashName = sku ? toMarketHashName(sku, schemaManager.schema) : name;
+              const scmPrice = await getSCMPriceObject({
+                name: hashName,
+                keyMetal: keyobj.metal,
+                currency: 'USD',
+                scmMarginBuy: config.scmMarginBuy ?? 0,
+                scmMarginSell: config.scmMarginSell ?? 0,
+              });
+              if (scmPrice && (scmPrice.buy.metal > 0 || scmPrice.sell.metal > 0)) {
+                const item = {
+                  name,
+                  sku,
+                  source: 'bptf',
+                  time: Math.floor(Date.now() / 1000),
+                  buy: scmPrice.buy,
+                  sell: scmPrice.sell,
+                };
+                emitQueue.enqueue(item);
+                return;
+              }
+            } catch (e) {
+              console.warn(`SCM fallback failed for ${name} (${sku}): ${e.message}`);
+            }
+            // Try BPTF fallback
+            try {
+              const data = Methods.getItemPriceFromExternalPricelist(
+                sku,
+                external_pricelist,
+                keyobj.metal,
+                schemaManager
+              );
+              const pricetfItem = data.pricetfItem;
+              if (
+                pricetfItem &&
+                (pricetfItem.buy.keys > 0 ||
+                  pricetfItem.buy.metal > 0 ||
+                  pricetfItem.sell.keys > 0 ||
+                  pricetfItem.sell.metal > 0)
+              ) {
+                const item = {
+                  name,
+                  sku,
+                  source: 'bptf',
+                  time: Math.floor(Date.now() / 1000),
+                  buy: pricetfItem.buy,
+                  sell: pricetfItem.sell,
+                };
+                emitQueue.enqueue(item);
+              }
+            } catch (e) {
+              console.warn(`BPTF fallback failed for ${name} (${sku}): ${e.message}`);
+            }
+          })
+        )
+      );
+      if (i + BATCH_SIZE < unpricedNames.length) {
+        await new Promise((res) => setTimeout(res, RATE_LIMIT_DELAY));
+      }
+    }
+    console.log(
+      `Fallback pass: emitted fallback prices for ${unpricedNames.length} items not in pricelist and with <3 buy/sell listings.`
+    );
+  }
+
+  await fallbackForUnpricedItems();
+  console.log('Fallback pass for unpriced items complete.');
 });
 
 async function isPriceSwingAcceptable(prev, next, sku) {
@@ -548,8 +639,25 @@ const determinePrice = async (name, sku) => {
     (pricetfItem.buy.keys === 0 && pricetfItem.buy.metal === 0) ||
     (pricetfItem.sell.keys === 0 && pricetfItem.sell.metal === 0)
   ) {
-    throw new Error(`| UPDATING PRICES |: Couldn't price ${name}. Item is not priced on bptf yet make a suggestion!, therefore we can't
-        compare our average price to it's average price.`);
+    // Try SCM fallback before BPTF fallback
+    try {
+      // Prefer SKU if available for hash name
+      const hashName = sku ? toMarketHashName(sku, schemaManager.schema) : name;
+      const scmPrice = await getSCMPriceObject({
+        name: hashName,
+        keyMetal: keyobj.metal,
+        currency: 'USD',
+      });
+      if (scmPrice && (scmPrice.buy.metal > 0 || scmPrice.sell.metal > 0)) {
+        return [scmPrice.buy, scmPrice.sell];
+      }
+    } catch (e) {
+      // SCM fallback failed, continue to BPTF fallback
+      console.warn(`SCM fallback failed for ${name} (${sku}): ${e.message}`);
+    }
+    throw new Error(
+      `| UPDATING PRICES |: Couldn't price ${name}. Item is not priced on bptf or SCM yet, make a suggestion!, therefore we can't compare our average price to its average price.`
+    );
   }
 
   try {
@@ -557,11 +665,24 @@ const determinePrice = async (name, sku) => {
     if (!buyListings || !sellListings) {
       throw new Error(`| UPDATING PRICES |: ${name} not enough listings...`);
     }
-
     if (buyListings.rowCount === 0 || sellListings.rowCount === 0) {
       throw new Error(`| UPDATING PRICES |: ${name} not enough listings...`);
     }
   } catch (e) {
+    // Try SCM fallback before BPTF fallback
+    try {
+      const hashName = sku ? toMarketHashName(sku, schemaManager.schema) : name;
+      const scmPrice = await getSCMPriceObject({
+        name: hashName,
+        keyMetal: keyobj.metal,
+        currency: 'USD',
+      });
+      if (scmPrice && (scmPrice.buy.metal > 0 || scmPrice.sell.metal > 0)) {
+        return [scmPrice.buy, scmPrice.sell];
+      }
+    } catch (scmErr) {
+      console.warn(`SCM fallback failed for ${name} (${sku}): ${scmErr.message}`);
+    }
     if (fallbackOntoPricesTf) {
       const final_buyObj = {
         keys: pricetfItem.buy.keys,
@@ -958,5 +1079,7 @@ initBptfWebSocket({
 });
 
 listen();
+
+const { getSCMPriceObject, toMarketHashName, parseSku } = require('./modules/scmPriceCalculator');
 
 module.exports = { db };
