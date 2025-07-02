@@ -77,8 +77,7 @@ async function checkKeyPriceStability({ db, Methods, adjustPrice, sendPriceAlert
   const CHANGE_THRESHOLD = 0.33;
   const STD_THRESHOLD = 0.66; // You can move this to config if you want
   try {
-    const [{ avg_buy: buyA, avg_sell: sellA, std_buy: stdBuyA, std_sell: stdSellA }] =
-      await db.any(`
+    const resultA = await db.any(`
             SELECT
                 AVG(buy_price_metal)::float AS avg_buy,
                 AVG(sell_price_metal)::float AS avg_sell,
@@ -88,7 +87,7 @@ async function checkKeyPriceStability({ db, Methods, adjustPrice, sendPriceAlert
             WHERE sku = '5021;6'
               AND created_at BETWEEN NOW() - INTERVAL '3 hours' AND NOW();
         `);
-    const [{ avg_buy: buyB, avg_sell: sellB }] = await db.any(`
+    const resultB = await db.any(`
             SELECT
                 AVG(buy_price_metal)::float AS avg_buy,
                 AVG(sell_price_metal)::float AS avg_sell
@@ -96,6 +95,14 @@ async function checkKeyPriceStability({ db, Methods, adjustPrice, sendPriceAlert
             WHERE sku = '5021;6'
               AND created_at BETWEEN NOW() - INTERVAL '6 hours' AND NOW() - INTERVAL '3 hours';
         `);
+
+    if (!resultA.length || !resultB.length) {
+      console.log('Not enough data in one of the 3-hour windows—skipping volatility check.');
+      return;
+    }
+
+    const { avg_buy: buyA, avg_sell: sellA, std_buy: stdBuyA, std_sell: stdSellA } = resultA[0];
+    const { avg_buy: buyB, avg_sell: sellB } = resultB[0];
 
     // eslint-disable-next-line eqeqeq
     if (buyA == null || sellA == null || buyB == null || sellB == null) {

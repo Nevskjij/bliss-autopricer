@@ -511,6 +511,13 @@ schemaManager.init(async function (err) {
             if (!sku) {
               return;
             }
+            // Prevent SCM fallback for keys
+            if (sku === '5021;6') {
+              console.warn(
+                `SCM fallback attempted for keys (${name}, ${sku}) in fallbackForUnpricedItems - this is not allowed. Skipping SCM fallback.`
+              );
+              return;
+            }
             // Try SCM fallback
             try {
               const hashName = sku ? toMarketHashName(sku, schemaManager.schema) : name;
@@ -626,6 +633,15 @@ async function isPriceSwingAcceptable(prev, next, sku) {
   const maxBuyIncrease = config.priceSwingLimits?.maxBuyIncrease ?? 0.1;
   const maxSellDecrease = config.priceSwingLimits?.maxSellDecrease ?? 0.1;
 
+  console.log({
+    avgBuy,
+    nextBuy,
+    maxBuyIncrease,
+    avgSell,
+    nextSell,
+    maxSellDecrease,
+  });
+
   if (nextBuy > avgBuy && (nextBuy - avgBuy) / avgBuy > maxBuyIncrease) {
     return false;
   }
@@ -670,6 +686,15 @@ const determinePrice = async (name, sku) => {
     (pricetfItem.buy.keys === 0 && pricetfItem.buy.metal === 0) ||
     (pricetfItem.sell.keys === 0 && pricetfItem.sell.metal === 0)
   ) {
+    // Prevent SCM fallback for keys
+    if (sku === '5021;6') {
+      console.warn(
+        `SCM fallback attempted for keys (${name}, ${sku}) - this is not allowed. Skipping SCM fallback.`
+      );
+      throw new Error(
+        `| UPDATING PRICES |: SCM fallback attempted for keys (${name}, ${sku}) - not allowed.`
+      );
+    }
     // Try SCM fallback before BPTF fallback
     try {
       // Prefer SKU if available for hash name
@@ -700,6 +725,15 @@ const determinePrice = async (name, sku) => {
       throw new Error(`| UPDATING PRICES |: ${name} not enough listings...`);
     }
   } catch (e) {
+    // Prevent SCM fallback for keys
+    if (sku === '5021;6') {
+      console.warn(
+        `SCM fallback attempted for keys (${name}, ${sku}) - this is not allowed. Skipping SCM fallback.`
+      );
+      throw new Error(
+        `| UPDATING PRICES |: SCM fallback attempted for keys (${name}, ${sku}) - not allowed.`
+      );
+    }
     // Try SCM fallback before BPTF fallback
     try {
       const hashName = sku ? toMarketHashName(sku, schemaManager.schema) : name;
@@ -1112,7 +1146,6 @@ initBptfWebSocket({
 
 listen();
 
-const { getSCMPriceObject, toMarketHashName, parseSku } = require('./modules/scmPriceCalculator');
-const { log } = require('console');
+const { getSCMPriceObject, toMarketHashName } = require('./modules/scmPriceCalculator');
 
 module.exports = { db };

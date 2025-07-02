@@ -95,14 +95,30 @@ function parseSku(sku) {
  */
 function skuToMarketHashName(skuObj, schema) {
   // This is a simplified version. For full accuracy, use the schema for defindex->name.
-  let name =
-    schema && schema[skuObj.defindex] ? schema[skuObj.defindex] : `Item ${skuObj.defindex}`;
+  let name = `Item ${skuObj.defindex}`;
+  if (schema && schema.getItemBySKU) {
+    // Reconstruct a minimal SKU for lookup
+    const minimalSku = `${skuObj.defindex};${skuObj.quality}`;
+    const item = schema.getItemBySKU(minimalSku);
+    if (item && item.item_name) {
+      name = item.item_name;
+    }
+  }
   // Quality
-  if (skuObj.quality === '6') {
-    name = `Strange ${name}`;
+  if (skuObj.quality === '1') {
+    name = `Genuine ${name}`;
+  } else if (skuObj.quality === '3') {
+    name = `Vintage ${name}`;
   } else if (skuObj.quality === '5') {
     name = `Unusual ${name}`;
+  } else if (skuObj.quality === '11') {
+    name = `Strange ${name}`;
+  } else if (skuObj.quality === '13') {
+    name = `Haunted ${name}`;
+  } else if (skuObj.quality === '14') {
+    name = `Collector's ${name}`;
   }
+  // Note: Quality 6 (Unique) and 0 (Normal) don't get prefixes
   // Killstreak
   if (skuObj.killstreak === 1) {
     name = `Killstreak ${name}`;
