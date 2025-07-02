@@ -617,8 +617,17 @@ const determinePrice = async (name, sku) => {
   // Delete listings based on moving averages.
   await deleteOldListings(db);
 
+  // Try fetching listings for both name and 'The ' + name if needed
   var buyListings = await getListings(db, name, 'buy');
   var sellListings = await getListings(db, name, 'sell');
+
+  // If not enough listings, try with 'The ' prefix (if not already present)
+  if ((!buyListings || buyListings.rowCount === 0) && !name.startsWith('The ')) {
+    buyListings = await getListings(db, 'The ' + name, 'buy');
+  }
+  if ((!sellListings || sellListings.rowCount === 0) && !name.startsWith('The ')) {
+    sellListings = await getListings(db, 'The ' + name, 'sell');
+  }
 
   // Get the price of the item from the in-memory external pricelist.
   var data;
