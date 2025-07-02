@@ -59,6 +59,7 @@ function initBptfWebSocket({
     }
     if (allowAllItems() || getAllowedItemNames().has(e.payload.item.name)) {
       let response_item = e.payload.item;
+      let spells = e.payload.item.spells;
       let steamid = e.payload.steamid;
       let intent = e.payload.intent;
       switch (e.event) {
@@ -73,6 +74,12 @@ function initBptfWebSocket({
             return;
           }
           if (!Methods.validateObject(currencies)) {
+            return;
+          }
+          if (spells && Array.isArray(spells) && spells.length > 0) {
+            console.log(
+              `[WebSocket] Ignored listing update for item with spells, as they are not supported. ${response_item.name} has spells: ${spells.map((spell) => spell.name).join(', ')}`
+            );
             return;
           }
 

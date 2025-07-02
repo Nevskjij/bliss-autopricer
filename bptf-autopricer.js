@@ -19,7 +19,7 @@ const { startPriceWatcher } = require('./modules/index');
 const scheduleTasks = require('./modules/scheduler');
 const { getBptfPrices, getAllPricedItemNamesWithEffects } = require('./modules/bptfPriceFetcher');
 const EmitQueue = require('./modules/emitQueue');
-const emitQueue = new EmitQueue(socketIO, 20); // 20ms between emits
+const emitQueue = new EmitQueue(socketIO, 5); // 5ms between emits
 emitQueue.start();
 
 const {
@@ -440,10 +440,6 @@ schemaManager.init(async function (err) {
   console.log(`Key object initialised to bptf base: ${JSON.stringify(keyobj)}`);
   // Get external pricelist.
   //external_pricelist = await Methods.getExternalPricelist();
-  if (config.initialSeedUnpriced && config.priceAllItems) {
-    await emitDefaultBptfPricesForUnpriceableItems();
-    console.log(`Default BPTF prices emitted for non price able items.`);
-  }
   // Calculate and emit prices on start up.
   await calculateAndEmitPrices();
   console.log('Prices calculated and emitted on startup.');
@@ -550,6 +546,26 @@ schemaManager.init(async function (err) {
               );
               const pricetfItem = data.pricetfItem;
               if (
+                !pricetfItem ||
+                (pricetfItem.buy.keys === 0 && pricetfItem.buy.metal === 0) ||
+                (pricetfItem.sell.keys === 0 && pricetfItem.sell.metal === 0)
+              ) {
+                return; // skip if no valid price
+              }
+
+              // Adjust prices: +25% sell, -25% buy
+              const adjust = (val, percent) =>
+                Math.max(0, Math.round((val + percent * val) * 100) / 100);
+
+              const buy = {
+                keys: pricetfItem.buy.keys,
+                metal: adjust(pricetfItem.buy.metal, -0.25),
+              };
+              const sell = {
+                keys: pricetfItem.sell.keys,
+                metal: adjust(pricetfItem.sell.metal, 0.25),
+              };
+              if (
                 pricetfItem &&
                 (pricetfItem.buy.keys > 0 ||
                   pricetfItem.buy.metal > 0 ||
@@ -561,8 +577,8 @@ schemaManager.init(async function (err) {
                   sku,
                   source: 'bptf',
                   time: Math.floor(Date.now() / 1000),
-                  buy: pricetfItem.buy,
-                  sell: pricetfItem.sell,
+                  buy: buy,
+                  sell: sell,
                 };
                 emitQueue.enqueue(item);
               }
@@ -581,8 +597,14 @@ schemaManager.init(async function (err) {
     );
   }
 
-  await fallbackForUnpricedItems();
-  console.log('Fallback pass for unpriced items complete.');
+  // Only run fallbackForUnpricedItems if both initialSeedUnpriced and priceAllItems are true
+  if (config.initialSeedUnpriced && config.priceAllItems) {
+    // eslint-disable-next-line spellcheck/spell-checker
+    // Note: fallbackForUnpricedItems and emitDefaultBptfPricesForUnpriceableItems have overlapping logic.
+    // Consider refactoring to avoid duplication.
+    await fallbackForUnpricedItems();
+    console.log('Fallback pass for unpriced items complete.');
+  }
 });
 
 async function isPriceSwingAcceptable(prev, next, sku) {
@@ -687,6 +709,7 @@ const determinePrice = async (name, sku) => {
         currency: 'USD',
       });
       if (scmPrice && (scmPrice.buy.metal > 0 || scmPrice.sell.metal > 0)) {
+        console.log(`SCM fallback used for ${name} (${sku}) due to insufficient listings.`);
         return [scmPrice.buy, scmPrice.sell];
       }
     } catch (scmErr) {
@@ -1090,5 +1113,6 @@ initBptfWebSocket({
 listen();
 
 const { getSCMPriceObject, toMarketHashName, parseSku } = require('./modules/scmPriceCalculator');
+const { log } = require('console');
 
 module.exports = { db };
