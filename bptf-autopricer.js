@@ -324,8 +324,14 @@ const calculateAndEmitPrices = async () => {
   let itemNames;
   if (config.priceAllItems) {
     const pricableSkus = await getPricableItems(db);
+    console.log(`Priceable SKUs from DB:`, pricableSkus.length);
+    console.log(`Key (5021;6) is priceable:`, pricableSkus.includes('5021;6'));
+
     const pricableSkuSet = new Set(pricableSkus);
     const skusToPrice = new Set(Array.from(updatedSkus).filter((sku) => pricableSkuSet.has(sku)));
+    console.log(`Updated SKUs:`, Array.from(updatedSkus));
+    console.log(`SKUs to price (updated + priceable):`, Array.from(skusToPrice));
+
     // Get all item names as usual
     let allItemNames = getAllPricedItemNamesWithEffects(external_pricelist, schemaManager);
 
@@ -339,6 +345,17 @@ const calculateAndEmitPrices = async () => {
     itemNames = allItemNames.filter((name) =>
       skusToPrice.has(schemaManager.schema.getSkuFromName(name))
     );
+
+    // Always ensure keys are included for pricing regardless of recent updates
+    const keyName = 'Mann Co. Supply Crate Key';
+    if (
+      !itemNames.includes(keyName) &&
+      allItemNames.includes(keyName) &&
+      pricableSkuSet.has('5021;6')
+    ) {
+      itemNames.push(keyName);
+      console.log('Added keys to pricing queue (sufficient listings, forced inclusion)');
+    }
 
     console.log(`Item names is ${itemNames.length} items before killstreak. `);
 
@@ -364,14 +381,30 @@ const calculateAndEmitPrices = async () => {
           let sku = schemaManager.schema.getSkuFromName(name);
           let arr = await determinePrice(name, sku);
           let result = await finalisePrice(arr, name, sku);
-          let item = result.item;
+
+          // Special handling for keys - log more details
+          if (sku === '5021;6') {
+            console.log(`Key processing: name=${name}, sku=${sku}`);
+            console.log(`Key arr result:`, arr);
+            console.log(`Key finalise result:`, result);
+          }
+
+          let item = result?.item;
           if (!result || !result.item) {
+            if (sku === '5021;6') {
+              console.warn(`Key processing failed: no result or item from finalisePrice`);
+            }
             return;
           }
           if (
             (item.buy.keys === 0 && item.buy.metal === 0) ||
             (item.sell.keys === 0 && item.sell.metal === 0)
           ) {
+            if (sku === '5021;6') {
+              console.warn(
+                `Key processing failed: zero prices - buy: ${JSON.stringify(item.buy)}, sell: ${JSON.stringify(item.sell)}`
+              );
+            }
             return;
           }
           // If the item is key add to the right place and skip it.
@@ -379,7 +412,11 @@ const calculateAndEmitPrices = async () => {
             const buyPrice = item.buy.metal;
             const sellPrice = item.sell.metal;
             const timestamp = Math.floor(Date.now() / 1000);
+            console.log(
+              `Inserting key price: buy=${buyPrice}, sell=${sellPrice}, timestamp=${timestamp}`
+            );
             await insertKeyPrice(db, keyobj, buyPrice, sellPrice, timestamp);
+            console.log(`Key price insertion completed`);
             return;
           }
           itemsToWrite.push(item);
@@ -632,15 +669,6 @@ async function isPriceSwingAcceptable(prev, next, sku) {
 
   const maxBuyIncrease = config.priceSwingLimits?.maxBuyIncrease ?? 0.1;
   const maxSellDecrease = config.priceSwingLimits?.maxSellDecrease ?? 0.1;
-
-  console.log({
-    avgBuy,
-    nextBuy,
-    maxBuyIncrease,
-    avgSell,
-    nextSell,
-    maxSellDecrease,
-  });
 
   if (nextBuy > avgBuy && (nextBuy - avgBuy) / avgBuy > maxBuyIncrease) {
     return false;
@@ -905,37 +933,63 @@ const getAverages = async (name, buyFiltered, sellFiltered, sku, pricetfItem) =>
     if (buyFiltered.length < 3) {
       throw new Error(`| UPDATING PRICES |: ${name} not enough buy listings...`);
     } else if (buyFiltered.length > 3 && buyFiltered.length < 10) {
-      var totalValue = {
-        keys: 0,
-        metal: 0,
-      };
-      // If there are more than 3 buy listings, we take the first 3 and calculate the mean average price.
-      for (var i = 0; i <= 2; i++) {
-        // If the keys or metal value is undefined, we set it to 0.
-        totalValue.keys += Object.is(buyFiltered[i].currencies.keys, undefined)
-          ? 0
-          : buyFiltered[i].currencies.keys;
-        // If the metal value is undefined, we set it to 0.
-        totalValue.metal += Object.is(buyFiltered[i].currencies.metal, undefined)
-          ? 0
-          : buyFiltered[i].currencies.metal;
+      // For keys (5021;6), we need to handle the averaging differently
+      if (sku === '5021;6') {
+        // Convert each listing to pure metal first, then average
+        let totalMetal = 0;
+        for (let i = 0; i <= 2; i++) {
+          totalMetal += Methods.toMetal(buyFiltered[i].currencies, keyobj.metal);
+        }
+        final_buyObj = {
+          keys: 0,
+          metal: totalMetal / 3,
+        };
+        console.log(`DEBUG: Key buy price (3-9 listings) - keys: 0, metal: ${totalMetal / 3}`);
+      } else {
+        // For other items, average keys and metal separately
+        var totalValue = {
+          keys: 0,
+          metal: 0,
+        };
+        // If there are more than 3 buy listings, we take the first 3 and calculate the mean average price.
+        for (let i = 0; i <= 2; i++) {
+          // If the keys or metal value is undefined, we set it to 0.
+          totalValue.keys += Object.is(buyFiltered[i].currencies.keys, undefined)
+            ? 0
+            : buyFiltered[i].currencies.keys;
+          // If the metal value is undefined, we set it to 0.
+          totalValue.metal += Object.is(buyFiltered[i].currencies.metal, undefined)
+            ? 0
+            : buyFiltered[i].currencies.metal;
+        }
+        final_buyObj = {
+          keys: Math.trunc(totalValue.keys / 3),
+          metal: totalValue.metal / 3,
+        };
       }
-      final_buyObj = {
-        keys: Math.trunc(totalValue.keys / i),
-        metal: totalValue.metal / i,
-      };
     } else {
       // Filter out outliers from set, and calculate a mean average price in terms of metal value.
       let filteredMean = filterOutliers(buyFiltered);
-      // Calculate the maximum amount of keys that can be made with the metal value returned.
-      let keys = Math.trunc(filteredMean / keyobj.metal);
-      // Calculate the remaining metal value after the value of the keys has been removed.
-      let metal = Methods.getRight(filteredMean - keys * keyobj.metal);
-      // Create the final buy object.
-      final_buyObj = {
-        keys: keys,
-        metal: metal,
-      };
+
+      // For keys (5021;6), keep the price as pure metal (keys: 0, metal: filteredMean)
+      // For other items, convert to key+metal format
+      if (sku === '5021;6') {
+        final_buyObj = {
+          keys: 0,
+          metal: filteredMean,
+        };
+        console.log(`DEBUG: Key buy price (>=10 listings) - keys: 0, metal: ${filteredMean}`);
+      } else {
+        // Calculate the maximum amount of keys that can be made with the metal value returned.
+        let keys = Math.trunc(filteredMean / keyobj.metal);
+        // Calculate the remaining metal value after the value of the keys has been removed.
+        let metal = Methods.getRight(filteredMean - keys * keyobj.metal);
+        // Create the final buy object.
+        final_buyObj = {
+          keys: keys,
+          metal: metal,
+        };
+      }
     }
     // Decided to pick the very first sell listing as it's ordered by the lowest sell price. I.e., the most competitive.
     // However, I decided to prioritise 'trusted' listings by certain steam ids. This may result in a very high sell price, instead
@@ -956,12 +1010,21 @@ const getAverages = async (name, buyFiltered, sellFiltered, sku, pricetfItem) =>
       if (!picked) {
         picked = sellFiltered[0];
       }
+
+      // For keys, the listing currencies should already be in pure metal format (keys: 0, metal: X)
+      // For other items, this preserves the key+metal format from the listing
       final_sellObj.keys = Object.is(picked.currencies.keys, undefined)
         ? 0
         : picked.currencies.keys;
       final_sellObj.metal = Object.is(picked.currencies.metal, undefined)
         ? 0
         : picked.currencies.metal;
+
+      if (sku === '5021;6') {
+        console.log(
+          `DEBUG: Key sell price from picked listing - keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}`
+        );
+      }
     } else {
       throw new Error(`| UPDATING PRICES |: ${name} not enough sell listings...`);
     }
@@ -988,6 +1051,11 @@ const getAverages = async (name, buyFiltered, sellFiltered, sku, pricetfItem) =>
     if (usePrices) {
       // The final averages are returned here. But work is still needed to be done. We can't assume that the buy average is
       // going to be lower than the sell average price. So we need to check for this later.
+      if (sku === '5021;6') {
+        console.log(
+          `DEBUG: Key final prices from getAverages - buy: {keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}}, sell: {keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
+        );
+      }
       return [final_buyObj, final_sellObj];
     } else {
       throw new Error(`| UPDATING PRICES |: ${name} pricing average generated by autopricer is too dramatically
@@ -1004,6 +1072,11 @@ const getAverages = async (name, buyFiltered, sellFiltered, sku, pricetfItem) =>
         keys: pricetfItem.sell.keys,
         metal: pricetfItem.sell.metal,
       };
+      if (sku === '5021;6') {
+        console.log(
+          `DEBUG: Key fallback prices from bptf - buy: {keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}}, sell: {keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
+        );
+      }
       return [final_buyObj, final_sellObj];
     } else {
       // We re-throw the error.
@@ -1060,8 +1133,11 @@ const finalisePrice = async (arr, name, sku) => {
       // for a key into the parsePrice method.
       // We are taking the sell array price as a whole, and also passing in the current selling price
       // for a key into the parsePrice method.
-      arr[0] = Methods.parsePrice(arr[0], keyobj.metal);
-      arr[1] = Methods.parsePrice(arr[1], keyobj.metal);
+      // Skip parsePrice for keys - they should always be in pure metal format
+      if (sku !== '5021;6') {
+        arr[0] = Methods.parsePrice(arr[0], keyobj.metal);
+        arr[1] = Methods.parsePrice(arr[1], keyobj.metal);
+      }
 
       // Clamp prices to bounds if set
       const bounds = getItemBounds().get(name) || {};
@@ -1078,31 +1154,55 @@ const finalisePrice = async (arr, name, sku) => {
       var sellInMetal = Methods.toMetal(arr[1], keyobj.metal);
 
       if (buyInMetal >= sellInMetal) {
-        item.buy = {
-          keys: arr[0].keys,
-          metal: Methods.getRight(arr[0].metal),
-        };
-        item.sell = {
-          keys: arr[0].keys,
-          metal: Methods.getRight(arr[0].metal + minSellMargin),
-        };
+        // For keys, always use pure metal format
+        if (sku === '5021;6') {
+          item.buy = {
+            keys: 0,
+            metal: Methods.getRight(arr[0].metal),
+          };
+          item.sell = {
+            keys: 0,
+            metal: Methods.getRight(arr[0].metal + minSellMargin),
+          };
+        } else {
+          item.buy = {
+            keys: arr[0].keys,
+            metal: Methods.getRight(arr[0].metal),
+          };
+          item.sell = {
+            keys: arr[0].keys,
+            metal: Methods.getRight(arr[0].metal + minSellMargin),
+          };
+        }
       } else {
-        item.buy = {
-          keys: arr[0].keys,
-          metal: Methods.getRight(arr[0].metal),
-        };
-        item.sell = {
-          keys: arr[1].keys,
-          metal: Methods.getRight(arr[1].metal),
-        };
+        // For keys, always use pure metal format
+        if (sku === '5021;6') {
+          item.buy = {
+            keys: 0,
+            metal: Methods.getRight(arr[0].metal),
+          };
+          item.sell = {
+            keys: 0,
+            metal: Methods.getRight(arr[1].metal),
+          };
+        } else {
+          item.buy = {
+            keys: arr[0].keys,
+            metal: Methods.getRight(arr[0].metal),
+          };
+          item.sell = {
+            keys: arr[1].keys,
+            metal: Methods.getRight(arr[1].metal),
+          };
+        }
       }
 
       // Load previous price from pricelist if available
       const pricelist = JSON.parse(fs.readFileSync(PRICELIST_PATH, 'utf8'));
       const prev = pricelist.items.find((i) => i.sku === sku);
 
-      // Only check if previous price exists
-      if (prev) {
+      // Only check if previous price exists (skip price swing check for keys)
+      if (prev && sku !== '5021;6') {
         const prevObj = { buy: prev.buy, sell: prev.sell };
         const nextObj = { buy: item.buy, sell: item.sell };
         const swingOk = await isPriceSwingAcceptable(prevObj, nextObj, sku);
