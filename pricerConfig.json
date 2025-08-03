@@ -1,7 +1,27 @@
 {
-  "pm2ProcessName": "tf2autobot",
-  "tf2AutobotDir": "../../../tf2autobot-5.13.2",
-  "botTradingDir": "files/blisstrading",
+  "version": "2.0",
   "port": 3000,
-  "ageThresholdSec": 7200
+  "ageThresholdSec": 7200,
+  "pm2ProcessName": "tf2autobot",
+  "bots": [],
+  "selectedBot": null,
+  "migration": {
+    "migratedFrom": "v1.0",
+    "migratedAt": "2025-08-03T02:13:46.773Z",
+    "originalConfig": {
+      "pm2ProcessName": "tf2autobot",
+      "tf2AutobotDir": "../../../tf2autobot-5.13.2",
+      "botTradingDir": "files/blisstrading",
+      "port": 3000,
+      "ageThresholdSec": 7200
+    }
+  },
+  "discovery": {
+    "lastRun": "2025-08-03T02:13:46.804Z",
+    "results": {
+      "totalInstallations": 1,
+      "totalBots": 0,
+      "runningProcesses": 0
+    }
+  }
 }

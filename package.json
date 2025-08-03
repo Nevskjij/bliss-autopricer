@@ -23,6 +23,8 @@
   "author": "Oliver Perring",
   "main": "bptf-autopricer.js",
   "scripts": {
+    "setup": "node setup-bots.js",
+    "setup-bots": "node setup-bots.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
