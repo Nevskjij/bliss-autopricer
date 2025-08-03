@@ -1,15 +1,6 @@
-# BPTF Autopricer Multi-Bot Configuration System
+# BPTF Autopricer Multi-Bot Configuration Systemn
 
-## Problem Solved ✅
-
-**Before**: Users had to manually configure complex file paths in `pricerConfig.json`, pointing to specific tf2autobot directories and bot folders. This was:
-
-- Confusing for new users
-- Error-prone
-- Didn't support multiple bots
-- Required manual path configuration
-
-**After**: Automatic bot discovery and management system that:
+**Setup**: Automatic bot discovery and management system that:
 
 - Auto-finds tf2autobot installations
 - Discovers all bot configurations automatically
