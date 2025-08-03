@@ -3,7 +3,15 @@
 [![npm version](https://img.shields.io/npm/v/pg-promise?label=pg-promise)](https://www.npmjs.com/package/pg-promise)
 [![Node.js](https://img.shields.io/badge/node-%3E=18.0.0-brightgreen)](https://nodejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-%3E=12-blue)](https://www.postgresql.org/)
-[![ESLint](https://img.shields.io/badge/code_style-ESLint-blueviolet)](https://eslint.org/)
+[![ESLint](https://img.shields.i### Notes
+
+- All changes to your bot's pricelist are applied atomically and will trigger a PM2 restart of your TF2Autobot process.
+- The web interface reads/writes to `files/item_list.json` and your bot's `pricelist.json` as configured in `pricerConfig.json`.
+- Outdated prices are detected using the `ageThresholdSec` setting.
+
+**📚 Learn more about the enhanced configuration system:**
+- **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete feature overview
+- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Setup and troubleshootingge/code_style-ESLint-blueviolet)](https://eslint.org/)
 [![Prettier](https://img.shields.io/badge/code_style-Prettier-ff69b4)](https://prettier.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -15,8 +23,31 @@ A custom pricer that generates item prices by analysing live and snapshot data f
 
 ---
 
+## 🎉 What's New in This Fork
+
+### Enhanced Multi-Bot Configuration System
+- **🔍 Auto-Discovery:** Automatically finds tf2autobot installations and bot configurations
+- **🤖 Multi-Bot Support:** Easily switch between multiple bots with a visual web interface
+- **⚡ One-Command Setup:** `npm run setup` handles everything automatically
+- **🔄 Seamless Migration:** Old configurations are automatically upgraded
+
+### Improved WebSocket Reliability
+- **🔧 Enhanced Connection Monitoring:** Automatic detection and recovery from connection issues
+- **📊 Health Dashboard:** Real-time websocket status at `/websocket-status`
+- **🚨 Proactive Alerts:** Warning system for connection problems
+- **♻️ Auto-Recovery:** Automatic reconnection when connections become stale
+
+**📚 Learn More:**
+- **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete overview of the new bot management system
+- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup and troubleshooting guide
+- **[WebSocket Monitoring Fix](WEBSOCKET-MONITORING-FIX.md)** - Technical details of the connection improvements
+
+---
+
 ## Features
 
+- **🤖 Enhanced Multi-Bot Configuration:** Auto-discovery and management of multiple tf2autobot instances with visual web interface.
+- **🔧 Improved WebSocket Reliability:** Enhanced connection monitoring with automatic recovery from connection issues.
 - **Automated Pricing:** Generates item prices using real-time and snapshot [backpack.tf](https://backpack.tf/) listing data, ensuring a profit margin and performing various sanity checks.
 - **Robust Fallback Pricing:** If an item cannot be priced from listings, the pricer will attempt to fetch and convert Steam Community Market (SCM) prices (with configurable margin and rounding), and only fall back to Backpack.tf (BPTF) prices as a last resort. This fallback system supports all item types, including unusuals, killstreakers, and special attributes.
 - **Baseline Comparison:** Compares generated prices against [Prices.tf](https://github.com/prices-tf) and disregards prices that exceed configured percentage thresholds.
@@ -64,8 +95,38 @@ npm install
 
 ### 2. Configure Application
 
-Copy and configure both `config.json` and `pricerConfig.json` at the project root.  
-See the **Configuration** section below for details.
+**🚀 NEW: Enhanced Bot Configuration System**
+
+We've made bot setup **10x easier** with automatic discovery and multi-bot support!
+
+#### Quick Setup (Recommended)
+
+```sh
+npm run setup
+```
+
+This command will:
+- Automatically find your tf2autobot installations
+- Discover all bot configurations
+- Set up the configuration file for you
+- Show you which bots were found
+- Provide clear next steps
+
+#### Manual Configuration
+
+If auto-discovery doesn't find your bots, you can:
+1. Start the Price Watcher: `npm start`
+2. Visit: `http://localhost:3000/bot-config`
+3. Add your bots manually through the web interface
+
+#### Traditional Setup
+
+Copy and configure `config.json` at the project root (see Configuration section below).
+The new system handles `pricerConfig.json` automatically.
+
+**📚 For detailed information about the new bot configuration system, see:**
+- **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete overview
+- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup guide
 
 ---
 
@@ -206,10 +267,29 @@ Holds core pricer settings:
 - All fallback prices are always rounded to the nearest scrap for consistency.
 - See the [Pricing Logic & Fallback System](#pricing-logic--fallback-system) section for details.
 
-### `pricerConfig.json`
+### `pricerConfig.json` - Bot Configuration
 
-Controls the Price Watcher web UI and integration with TF2AutoBot's selling pricelist:
+**🆕 Enhanced Multi-Bot Configuration System**
 
+The autopricer now features an advanced bot configuration system that:
+- **Auto-discovers** tf2autobot installations and bot configurations
+- **Supports multiple bots** with easy switching between them
+- **Migrates old configurations** automatically
+- **Provides a web interface** for easy bot management
+
+#### Quick Setup
+```sh
+npm run setup
+```
+
+#### Web Management Interface
+Visit: `http://localhost:3000/bot-config` to:
+- View all discovered bots
+- Switch between bot configurations
+- Add bots manually
+- Export/import configurations
+
+#### Traditional Format (Still Supported)
 ```json
 {
   "pm2ProcessName": "tf2autobot",
@@ -219,6 +299,10 @@ Controls the Price Watcher web UI and integration with TF2AutoBot's selling pric
   "ageThresholdSec": 7200
 }
 ```
+
+**📚 For complete setup instructions and troubleshooting:**
+- **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Overview and benefits
+- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup guide
 
 ---
 
@@ -276,6 +360,10 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 
 ### Main Features
 
+- **🤖 Bot Configuration Manager:** New multi-bot management system at `/bot-config`
+  - Auto-discover and switch between multiple bots
+  - Visual bot selection and configuration
+  - Migration from old configuration format
 - **Dashboard Overview:** View and filter items by status: Outdated, Current, and Unpriced.
 - **Pricelist Management:** Add, remove, and edit items and bounds directly in the table.
 - **Queue System:** Review and apply pending actions, which will trigger a PM2 restart for changes to take effect.
@@ -283,10 +371,22 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 
 ### How to Use
 
-1. **Start the pricer** (see "Running" section).
-2. **Open your browser** to `http://localhost:<pricerConfig.port>`.
-3. **Interact with the dashboard** to manage items and review pending actions.
-4. **Explore additional pages** for advanced features.
+1. **Configure your bots** (new!):
+   ```sh
+   npm run setup  # Auto-discover bots
+   ```
+   Or visit: `http://localhost:3000/bot-config` for manual setup
+2. **Start the pricer** (see "Running" section).
+3. **Open your browser** to `http://localhost:<pricerConfig.port>`.
+4. **Interact with the dashboard** to manage items and review pending actions.
+5. **Explore additional pages** for advanced features.
+
+### Bot Management (New!)
+
+- **Multiple Bot Support:** Easily switch between different bot configurations
+- **Auto-Discovery:** Automatically finds tf2autobot installations
+- **Web Interface:** Visual bot management at `/bot-config`
+- **Migration Support:** Old configurations are automatically upgraded
 
 ### Notes
 
@@ -305,6 +405,15 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 ---
 
 ## FAQ
+
+- **🤖 How do I set up multiple bots or switch between bot configurations?**  
+  Use the new multi-bot system! Run `npm run setup` to auto-discover your bots, or visit `http://localhost:3000/bot-config` to manage them manually. See the [Multi-Bot System Guide](MULTI-BOT-SYSTEM.md) for details.
+
+- **🔧 The autopricer stopped receiving price updates from backpack.tf. What's wrong?**  
+  This has been fixed! The enhanced websocket monitoring system now automatically detects and recovers from connection issues. Check `http://localhost:3456/websocket-status` for real-time connection health.
+
+- **📁 I'm having trouble configuring the tf2autobot directory paths.**  
+  You no longer need to configure paths manually! The auto-discovery system finds your tf2autobot installations automatically. Run `npm run setup` or use the web interface at `/bot-config`.
 
 - **How do I connect this to TF2AutoBot?**  
   See: [jack-richards#11](https://github.com/jack-richards/bptf-autopricer/issues/11)
