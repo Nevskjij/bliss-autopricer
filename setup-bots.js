@@ -78,9 +78,10 @@ async function runSetup() {
     }
 
     console.log('\n🚀 Next Steps:');
-    console.log('  1. Start the Price Watcher: npm run dev');
-    console.log(`  2. Visit web interface: http://localhost:${configManager.config.port}`);
-    console.log(`  3. Manage bots: http://localhost:${configManager.config.port}/bot-config`);
+    console.log('  1. Configure API keys in config.json (if not done already)');
+    console.log('  2. Start the Price Watcher: npm start');
+    console.log(`  3. Visit web interface: http://localhost:${configManager.config.port}`);
+    console.log(`  4. Manage bots: http://localhost:${configManager.config.port}/bot-config`);
   } catch (error) {
     console.error('❌ Setup failed:', error.message);
     process.exit(1);

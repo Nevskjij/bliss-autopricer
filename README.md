@@ -93,13 +93,48 @@ cd bliss-autopricer
 npm install
 ```
 
+**📋 Included Files Check:**
+The following required files should be present after cloning:
+- ✅ `config.json` - Main configuration file (needs your API keys)
+- ✅ `pricerConfig.json` - Bot configuration (auto-managed by setup)
+- ✅ `initialize-db.sql` - Database setup script
+- ✅ `setup-bots.js` - Auto-discovery setup script
+- ✅ `files/item_list.json` - Example item list
+- ✅ `files/pricelist.json` - Example pricelist
+- ✅ All required modules in `modules/` directory
+
+If any files are missing, re-clone the repository.
+
 ### 2. Configure Application
 
 **🚀 NEW: Enhanced Bot Configuration System**
 
 We've made bot setup **10x easier** with automatic discovery and multi-bot support!
 
-#### Quick Setup (Recommended)
+#### Step 1: Configure API Keys and Database
+
+Before running the setup, you need to configure your API keys and database connection in `config.json`:
+
+```json
+{
+  "bptfAPIKey": "your_actual_bptf_api_key_here",
+  "bptfToken": "your_actual_bptf_token_here", 
+  "steamAPIKey": "your_actual_steam_api_key_here",
+  "database": {
+    "schema": "tf2",
+    "host": "localhost",
+    "port": 5432,
+    "name": "bptf-autopricer",
+    "user": "postgres",
+    "password": "your_actual_database_password"
+  },
+  // ... rest of configuration
+}
+```
+
+**⚠️ Important:** Replace the placeholder values with your actual API keys and database credentials.
+
+#### Step 2: Quick Bot Setup (Recommended)
 
 ```sh
 npm run setup
@@ -112,7 +147,7 @@ This command will:
 - Show you which bots were found
 - Provide clear next steps
 
-#### Manual Configuration
+#### Alternative: Manual Configuration
 
 If auto-discovery doesn't find your bots, you can:
 1. Start the Price Watcher: `npm start`
@@ -121,8 +156,8 @@ If auto-discovery doesn't find your bots, you can:
 
 #### Traditional Setup
 
-Copy and configure `config.json` at the project root (see Configuration section below).
-The new system handles `pricerConfig.json` automatically.
+You can still manually configure `pricerConfig.json` if preferred (see Configuration section below).
+The new system handles this automatically.
 
 **📚 For detailed information about the new bot configuration system, see:**
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete overview
@@ -338,10 +373,22 @@ See the full API documentation in this README for request/response details.
 
 ## Running
 
-Start the pricer (includes API, Socket.IO & Web Interface):
+After completing the setup and configuration steps above:
+
+**Start the autopricer:**
 
 ```sh
+npm start
+```
+
+**Alternative methods:**
+
+```sh
+# Direct execution
 node bptf-autopricer.js
+
+# Development mode (same as npm start)
+npm run dev
 ```
 
 **Tip:** Run under PM2 to keep alive:
@@ -350,6 +397,11 @@ node bptf-autopricer.js
 npm install -g pm2
 pm2 start bptf-autopricer.js --name bptf-autopricer
 ```
+
+**⚠️ Before running:** Make sure you have:
+1. ✅ Configured API keys in `config.json`
+2. ✅ Set up PostgreSQL database (see PostgreSQL Setup section)
+3. ✅ Run `npm run setup` to configure your bots
 
 ---
 
@@ -393,6 +445,28 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 - All changes to your bot’s pricelist are applied atomically and will trigger a PM2 restart of your TF2Autobot process.
 - The web interface reads/writes to `files/item_list.json` and your bot’s `pricelist.json` as configured in `pricerConfig.json`.
 - Outdated prices are detected using the `ageThresholdSec` setting.
+
+---
+
+## Quick Start Summary
+
+For first-time users, follow these steps in order:
+
+1. **Install dependencies:** `npm install`
+2. **Set up PostgreSQL database** (see PostgreSQL Setup section)
+3. **Configure API keys** in `config.json` 
+4. **Run bot setup:** `npm run setup`
+5. **Start the autopricer:** `npm start`
+6. **Access web interface:** `http://localhost:3000`
+
+**🔑 Required API Keys:**
+- Backpack.tf API key and token
+- Steam API key  
+- PostgreSQL database credentials
+
+**📚 For detailed setup help:**
+- **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Bot configuration
+- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup guide
 
 ---
 

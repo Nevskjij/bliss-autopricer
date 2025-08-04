@@ -25,6 +25,8 @@
   "scripts": {
     "setup": "node setup-bots.js",
     "setup-bots": "node setup-bots.js",
+    "start": "node bptf-autopricer.js",
+    "dev": "node bptf-autopricer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
