@@ -3,7 +3,11 @@
 [![npm version](https://img.shields.io/npm/v/pg-promise?label=pg-promise)](https://www.npmjs.com/package/pg-promise)
 [![Node.js](https://img.shields.io/badge/node-%3E=18.0.0-brightgreen)](https://nodejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-%3E=12-blue)](https://www.postgresql.org/)
-[![ESLint](https://img.shields.i### Notes
+[![ESLint](https://img.shields.io/badge/code_style-ESLint-blueviolet)](https://eslint.org/)
+[![Prettier](https://img.shields.io/badge/code_style-Prettier-ff69b4)](https://prettier.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+### Notes
 
 - All changes to your bot's pricelist are applied atomically and will trigger a PM2 restart of your TF2Autobot process.
 - The web interface reads/writes to `files/item_list.json` and your bot's `pricelist.json` as configured in `pricerConfig.json`.
@@ -11,9 +15,7 @@
 
 **📚 Learn more about the enhanced configuration system:**
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete feature overview
-- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Setup and troubleshootingge/code_style-ESLint-blueviolet)](https://eslint.org/)
-[![Prettier](https://img.shields.io/badge/code_style-Prettier-ff69b4)](https://prettier.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+- **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Setup and troubleshooting
 
 <div align="center">
   <img src="https://github.com/jack-richards/bptf-autopricer/assets/58331725/203fe808-30ff-4d7d-868c-a3ef6d31497d" alt="logo" style="width: 280px; height: 320px; display: block; margin-left: auto; margin-right: auto;">
@@ -76,7 +78,7 @@ The pricer uses a robust multi-stage fallback system to ensure all items (includ
 
 ## Requirements
 
-- **Node.js** (v18 or newer)
+- **Node.js** (v22.0.0 or newer - required for built-in fetch support)
 - **npm**
 - **PostgreSQL** (v12 or newer)
 - **TF2 Auto Bot**
@@ -102,6 +104,11 @@ The following required files should be present after cloning:
 - ✅ `files/item_list.json` - Example item list
 - ✅ `files/pricelist.json` - Example pricelist
 - ✅ All required modules in `modules/` directory
+
+**📦 Dependencies:**
+- All required Node.js packages are listed in `package.json`
+- `node-fetch` is included for compatibility (but uses built-in fetch when available)
+- Run `npm install` to install all dependencies automatically
 
 If any files are missing, re-clone the repository.
 
@@ -452,6 +459,11 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 
 For first-time users, follow these steps in order:
 
+**Prerequisites:**
+- Node.js v22.0.0 or newer
+- PostgreSQL v12 or newer
+
+**Setup Steps:**
 1. **Install dependencies:** `npm install`
 2. **Set up PostgreSQL database** (see PostgreSQL Setup section)
 3. **Configure API keys** in `config.json` 
