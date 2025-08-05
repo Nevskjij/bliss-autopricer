@@ -17,7 +17,7 @@ An advanced TF2 item pricing system that uses live backpack.tf listings and Stea
 
 ```bash
 # 1. Clone and install
-git clone -b BUG-FIXES https://github.com/OliverPerring/bliss-autopricer.git
+git clone https://github.com/OliverPerring/bliss-autopricer.git
 cd bliss-autopricer
 npm install
 
