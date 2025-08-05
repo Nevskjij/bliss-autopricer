@@ -1,7 +1,7 @@
 {
   "name": "bptf-autopricer",
   "version": "1.0.0",
-  "description": "Automatically prices items using listing data from backpack.tf, with data from prices.tf acting as a baseline.",
+  "description": "Automatically prices items using listing data from backpack.tf and Steam Community Market data with intelligent averaging algorithms.",
   "keywords": [
     "tf2",
     "team fortress 2",
