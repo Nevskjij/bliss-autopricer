@@ -120,7 +120,14 @@ We've made bot setup **10x easier** with automatic discovery and multi-bot suppo
 
 #### Step 1: Configure API Keys and Database
 
-Before running the setup, you need to configure your API keys and database connection in `config.json`:
+**⚠️ CRITICAL:** Before running the setup, you MUST configure your API keys and database connection in `config.json`. The autopricer will fail with a 403 error if you skip this step.
+
+**📝 Required API Keys:**
+1. **Backpack.tf API Key:** Get from [backpack.tf](https://backpack.tf/developer)
+2. **Backpack.tf Token:** Get from [backpack.tf](https://backpack.tf/developer) 
+3. **Steam API Key:** Get from [steamcommunity.com](https://steamcommunity.com/dev/apikey)
+
+Edit `config.json` and replace ALL placeholder values:
 
 ```json
 {
@@ -139,7 +146,9 @@ Before running the setup, you need to configure your API keys and database conne
 }
 ```
 
-**⚠️ Important:** Replace the placeholder values with your actual API keys and database credentials.
+**🚨 Common Error:** If you get `ERR_BAD_REQUEST` with status 403, you haven't configured your API keys correctly.
+
+**✅ Validation Tool:** Run `npm run validate-config` to check if your configuration is correct before starting the autopricer.
 
 #### Step 2: Quick Bot Setup (Recommended)
 
@@ -466,14 +475,15 @@ For first-time users, follow these steps in order:
 **Setup Steps:**
 1. **Install dependencies:** `npm install`
 2. **Set up PostgreSQL database** (see PostgreSQL Setup section)
-3. **Configure API keys** in `config.json` 
-4. **Run bot setup:** `npm run setup`
-5. **Start the autopricer:** `npm start`
-6. **Access web interface:** `http://localhost:3000`
+3. **⚠️ CRITICAL: Configure API keys** in `config.json` (replace ALL placeholder values!)
+4. **Validate configuration:** `npm run validate-config` (optional but recommended)
+5. **Run bot setup:** `npm run setup`
+6. **Start the autopricer:** `npm start`
+7. **Access web interface:** `http://localhost:3000`
 
-**🔑 Required API Keys:**
-- Backpack.tf API key and token
-- Steam API key  
+**🔑 Required API Keys (MUST configure before running):**
+- Backpack.tf API key and token from [backpack.tf/developer](https://backpack.tf/developer)
+- Steam API key from [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)
 - PostgreSQL database credentials
 
 **📚 For detailed setup help:**
@@ -491,6 +501,15 @@ For first-time users, follow these steps in order:
 ---
 
 ## FAQ
+
+- **🚨 I'm getting 'ERR_BAD_REQUEST' with status code 403 when starting the autopricer. What's wrong?**  
+  This error means your API keys are not configured correctly in `config.json`. Make sure you have:
+  - Replaced `"your bptf api key"` with your actual backpack.tf API key
+  - Replaced `"your bptf token"` with your actual backpack.tf token  
+  - Replaced `"your steam api key"` with your actual Steam API key
+  - Set up your database credentials correctly
+  
+  Get your API keys from [backpack.tf/developer](https://backpack.tf/developer) and [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey).
 
 - **🤖 How do I set up multiple bots or switch between bot configurations?**  
   Use the new multi-bot system! Run `npm run setup` to auto-discover your bots, or visit `http://localhost:3000/bot-config` to manage them manually. See the [Multi-Bot System Guide](MULTI-BOT-SYSTEM.md) for details.
