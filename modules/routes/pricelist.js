@@ -3,18 +3,27 @@ const express = require('express');
 const { loadJson } = require('../utils');
 const renderPage = require('../layout');
 
-module.exports = function (app, config) {
+module.exports = function (app, config, configManager) {
   const router = express.Router();
   const thresholdSec = config.ageThresholdSec;
 
-  const pricelistPath = path.resolve(__dirname, '../../files/pricelist.json');
-  const sellingPricelistPath = path.resolve(
-    __dirname,
-    config.tf2AutobotDir,
-    config.botTradingDir,
-    'pricelist.json'
-  );
-  const itemListPath = path.resolve(__dirname, '../../files/item_list.json');
+  // Helper function to get current bot paths
+  function getBotPaths() {
+    const selectedBot = configManager.getSelectedBot();
+    if (!selectedBot) {
+      throw new Error('No bot selected. Please configure a bot first.');
+    }
+
+    return {
+      pricelistPath: path.resolve(__dirname, '../../files/pricelist.json'),
+      sellingPricelistPath: path.resolve(
+        selectedBot.tf2AutobotDir,
+        selectedBot.botTradingDir,
+        'pricelist.json'
+      ),
+      itemListPath: path.resolve(__dirname, '../../files/item_list.json'),
+    };
+  }
 
   function buildTable(items, showAge, sell) {
     items.sort((a, b) => a.name.localeCompare(b.name));
@@ -82,9 +91,10 @@ module.exports = function (app, config) {
   }
 
   function loadData() {
-    const main = loadJson(pricelistPath);
-    const sell = loadJson(sellingPricelistPath);
-    const itemList = loadJson(itemListPath).items.map((i) => i.name);
+    const paths = getBotPaths();
+    const main = loadJson(paths.pricelistPath);
+    const sell = loadJson(paths.sellingPricelistPath);
+    const itemList = loadJson(paths.itemListPath).items.map((i) => i.name);
     const now = Math.floor(Date.now() / 1000);
     const outdated = [],
       current = [],
@@ -103,8 +113,22 @@ module.exports = function (app, config) {
   }
 
   router.get('/', (req, res) => {
-    const { outdated, current, missing, sell } = loadData();
-    const html = `
+    try {
+      // Check if bot is configured
+      const selectedBot = configManager.getSelectedBot();
+      if (!selectedBot) {
+        const html = `
+          <div style="text-align: center; margin-top: 50px;">
+            <h2>⚠️ No Bot Configuration Found</h2>
+            <p>You need to configure a bot before viewing pricelist data.</p>
+            <p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Configure Bot</a></p>
+          </div>
+        `;
+        return res.send(renderPage('Pricelist Status - No Bot Configured', html));
+      }
+
+      const { outdated, current, missing, sell } = loadData();
+      const html = `
 		<div class="controls">
 		  <input type="text" id="search" placeholder="Search...">
 		  <label><input type="checkbox" class="filter" id="filter-notinbot"> Not In Bot</label>
@@ -231,7 +255,19 @@ module.exports = function (app, config) {
 		</script>
 	  `;
 
-    res.send(renderPage('Pricelist Status', html));
+      res.send(renderPage('Pricelist Status', html));
+    } catch (error) {
+      console.error('Error in pricelist route:', error);
+      const errorHtml = `
+        <div style="text-align: center; margin-top: 50px;">
+          <h2>⚠️ Error Loading Pricelist Data</h2>
+          <p>There was an error loading the pricelist data.</p>
+          <p>Please check that your bot configuration is correct and try again.</p>
+          <p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Check Bot Config</a></p>
+        </div>
+      `;
+      res.status(500).send(renderPage('Pricelist Status - Error', errorHtml));
+    }
   });
   app.use('/', router); // Mount the router to root path
 };

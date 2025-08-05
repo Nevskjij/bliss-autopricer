@@ -17,35 +17,35 @@ if (!fs.existsSync(configPath)) {
 
 try {
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  
+
   let errors = [];
   let warnings = [];
-  
+
   // Check API keys
   if (!config.bptfAPIKey || config.bptfAPIKey === 'your bptf api key') {
     errors.push('❌ bptfAPIKey is not configured (still has placeholder value)');
   } else if (config.bptfAPIKey.length < 10) {
-    warnings.push('⚠️  bptfAPIKey seems too short - make sure it\'s correct');
+    warnings.push("⚠️  bptfAPIKey seems too short - make sure it's correct");
   } else {
     console.log('✅ bptfAPIKey is configured');
   }
-  
+
   if (!config.bptfToken || config.bptfToken === 'your bptf token') {
     errors.push('❌ bptfToken is not configured (still has placeholder value)');
   } else if (config.bptfToken.length < 10) {
-    warnings.push('⚠️  bptfToken seems too short - make sure it\'s correct');
+    warnings.push("⚠️  bptfToken seems too short - make sure it's correct");
   } else {
     console.log('✅ bptfToken is configured');
   }
-  
+
   if (!config.steamAPIKey || config.steamAPIKey === 'your steam api key') {
     errors.push('❌ steamAPIKey is not configured (still has placeholder value)');
   } else if (config.steamAPIKey.length !== 32) {
-    warnings.push('⚠️  steamAPIKey should be 32 characters long - make sure it\'s correct');
+    warnings.push("⚠️  steamAPIKey should be 32 characters long - make sure it's correct");
   } else {
     console.log('✅ steamAPIKey is configured');
   }
-  
+
   // Check database config
   if (!config.database) {
     errors.push('❌ database configuration is missing');
@@ -55,37 +55,36 @@ try {
     } else {
       console.log('✅ database password is configured');
     }
-    
+
     if (config.database.host) {
       console.log('✅ database host is configured');
     }
-    
+
     if (config.database.name) {
       console.log('✅ database name is configured');
     }
   }
-  
+
   // Print results
   console.log('\n📊 Validation Results:');
   console.log('======================');
-  
+
   if (errors.length === 0) {
     console.log('🎉 Configuration looks good! You should be able to start the autopricer.');
-    
+
     if (warnings.length > 0) {
       console.log('\n⚠️  Warnings:');
-      warnings.forEach(warning => console.log(`   ${warning}`));
+      warnings.forEach((warning) => console.log(`   ${warning}`));
     }
-    
+
     console.log('\n🚀 Next steps:');
     console.log('   1. Set up PostgreSQL database: see README.md');
     console.log('   2. Run bot setup: npm run setup');
     console.log('   3. Start autopricer: npm start');
-    
   } else {
     console.log('❌ Configuration has errors that need to be fixed:');
-    errors.forEach(error => console.log(`   ${error}`));
-    
+    errors.forEach((error) => console.log(`   ${error}`));
+
     console.log('\n🔧 To fix these issues:');
     console.log('   1. Edit config.json');
     console.log('   2. Replace placeholder values with your actual API keys');
@@ -94,7 +93,6 @@ try {
     console.log('      - Steam: https://steamcommunity.com/dev/apikey');
     console.log('   4. Run this validator again: node validate-config.js');
   }
-  
 } catch (error) {
   console.log('❌ Error reading config.json:');
   console.log(`   ${error.message}`);

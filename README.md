@@ -9,11 +9,14 @@
 
 ### Notes
 
+- **⚠️ Important:** Before using the web interface, ensure you have configured a bot using `npm run setup` or the Bot Config page.
+- All routes now dynamically reference the currently selected bot's configuration.
 - All changes to your bot's pricelist are applied atomically and will trigger a PM2 restart of your TF2Autobot process.
-- The web interface reads/writes to `files/item_list.json` and your bot's `pricelist.json` as configured in `pricerConfig.json`.
+- The web interface reads/writes to `files/item_list.json` and your bot's `pricelist.json` as configured in the selected bot.
 - Outdated prices are detected using the `ageThresholdSec` setting.
 
 **📚 Learn more about the enhanced configuration system:**
+
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete feature overview
 - **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Setup and troubleshooting
 
@@ -28,18 +31,21 @@ A custom pricer that generates item prices by analysing live and snapshot data f
 ## 🎉 What's New in This Fork
 
 ### Enhanced Multi-Bot Configuration System
+
 - **🔍 Auto-Discovery:** Automatically finds tf2autobot installations and bot configurations
 - **🤖 Multi-Bot Support:** Easily switch between multiple bots with a visual web interface
 - **⚡ One-Command Setup:** `npm run setup` handles everything automatically
 - **🔄 Seamless Migration:** Old configurations are automatically upgraded
 
 ### Improved WebSocket Reliability
+
 - **🔧 Enhanced Connection Monitoring:** Automatic detection and recovery from connection issues
 - **📊 Health Dashboard:** Real-time websocket status at `/websocket-status`
 - **🚨 Proactive Alerts:** Warning system for connection problems
 - **♻️ Auto-Recovery:** Automatic reconnection when connections become stale
 
 **📚 Learn More:**
+
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete overview of the new bot management system
 - **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup and troubleshooting guide
 - **[WebSocket Monitoring Fix](WEBSOCKET-MONITORING-FIX.md)** - Technical details of the connection improvements
@@ -97,6 +103,7 @@ npm install
 
 **📋 Included Files Check:**
 The following required files should be present after cloning:
+
 - ✅ `config.json` - Main configuration file (needs your API keys)
 - ✅ `pricerConfig.json` - Bot configuration (auto-managed by setup)
 - ✅ `initialize-db.sql` - Database setup script
@@ -106,6 +113,7 @@ The following required files should be present after cloning:
 - ✅ All required modules in `modules/` directory
 
 **📦 Dependencies:**
+
 - All required Node.js packages are listed in `package.json`
 - `node-fetch` is included for compatibility (but uses built-in fetch when available)
 - Run `npm install` to install all dependencies automatically
@@ -123,8 +131,9 @@ We've made bot setup **10x easier** with automatic discovery and multi-bot suppo
 **⚠️ CRITICAL:** Before running the setup, you MUST configure your API keys and database connection in `config.json`. The autopricer will fail with a 403 error if you skip this step.
 
 **📝 Required API Keys:**
+
 1. **Backpack.tf API Key:** Get from [backpack.tf](https://backpack.tf/developer)
-2. **Backpack.tf Token:** Get from [backpack.tf](https://backpack.tf/developer) 
+2. **Backpack.tf Token:** Get from [backpack.tf](https://backpack.tf/developer)
 3. **Steam API Key:** Get from [steamcommunity.com](https://steamcommunity.com/dev/apikey)
 
 Edit `config.json` and replace ALL placeholder values:
@@ -132,7 +141,7 @@ Edit `config.json` and replace ALL placeholder values:
 ```json
 {
   "bptfAPIKey": "your_actual_bptf_api_key_here",
-  "bptfToken": "your_actual_bptf_token_here", 
+  "bptfToken": "your_actual_bptf_token_here",
   "steamAPIKey": "your_actual_steam_api_key_here",
   "database": {
     "schema": "tf2",
@@ -141,7 +150,7 @@ Edit `config.json` and replace ALL placeholder values:
     "name": "bptf-autopricer",
     "user": "postgres",
     "password": "your_actual_database_password"
-  },
+  }
   // ... rest of configuration
 }
 ```
@@ -157,6 +166,7 @@ npm run setup
 ```
 
 This command will:
+
 - Automatically find your tf2autobot installations
 - Discover all bot configurations
 - Set up the configuration file for you
@@ -166,6 +176,7 @@ This command will:
 #### Alternative: Manual Configuration
 
 If auto-discovery doesn't find your bots, you can:
+
 1. Start the Price Watcher: `npm start`
 2. Visit: `http://localhost:3000/bot-config`
 3. Add your bots manually through the web interface
@@ -176,6 +187,7 @@ You can still manually configure `pricerConfig.json` if preferred (see Configura
 The new system handles this automatically.
 
 **📚 For detailed information about the new bot configuration system, see:**
+
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Complete overview
 - **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup guide
 
@@ -323,24 +335,29 @@ Holds core pricer settings:
 **🆕 Enhanced Multi-Bot Configuration System**
 
 The autopricer now features an advanced bot configuration system that:
+
 - **Auto-discovers** tf2autobot installations and bot configurations
 - **Supports multiple bots** with easy switching between them
 - **Migrates old configurations** automatically
 - **Provides a web interface** for easy bot management
 
 #### Quick Setup
+
 ```sh
 npm run setup
 ```
 
 #### Web Management Interface
+
 Visit: `http://localhost:3000/bot-config` to:
+
 - View all discovered bots
 - Switch between bot configurations
 - Add bots manually
 - Export/import configurations
 
 #### Traditional Format (Still Supported)
+
 ```json
 {
   "pm2ProcessName": "tf2autobot",
@@ -352,6 +369,7 @@ Visit: `http://localhost:3000/bot-config` to:
 ```
 
 **📚 For complete setup instructions and troubleshooting:**
+
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Overview and benefits
 - **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup guide
 
@@ -415,6 +433,7 @@ pm2 start bptf-autopricer.js --name bptf-autopricer
 ```
 
 **⚠️ Before running:** Make sure you have:
+
 1. ✅ Configured API keys in `config.json`
 2. ✅ Set up PostgreSQL database (see PostgreSQL Setup section)
 3. ✅ Run `npm run setup` to configure your bots
@@ -435,7 +454,8 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 - **Dashboard Overview:** View and filter items by status: Outdated, Current, and Unpriced.
 - **Pricelist Management:** Add, remove, and edit items and bounds directly in the table.
 - **Queue System:** Review and apply pending actions, which will trigger a PM2 restart for changes to take effect.
-- **Navigation Bar:** Access price list, bounds editing, key price graphs, profit/loss, trade history, and logs.
+- **Navigation Bar:** Access price list, bounds editing, key price graphs, profit/loss, trade history, logs, and **bot configuration**.
+- **Dynamic Bot Paths:** All routes now automatically use the currently selected bot's configuration.
 
 ### How to Use
 
@@ -469,10 +489,12 @@ Visit: `http://localhost:<pricerConfig.port>` (default: 3000).
 For first-time users, follow these steps in order:
 
 **Prerequisites:**
+
 - Node.js v22.0.0 or newer
 - PostgreSQL v12 or newer
 
 **Setup Steps:**
+
 1. **Install dependencies:** `npm install`
 2. **Set up PostgreSQL database** (see PostgreSQL Setup section)
 3. **⚠️ CRITICAL: Configure API keys** in `config.json` (replace ALL placeholder values!)
@@ -482,11 +504,13 @@ For first-time users, follow these steps in order:
 7. **Access web interface:** `http://localhost:3000`
 
 **🔑 Required API Keys (MUST configure before running):**
+
 - Backpack.tf API key and token from [backpack.tf/developer](https://backpack.tf/developer)
 - Steam API key from [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)
 - PostgreSQL database credentials
 
 **📚 For detailed setup help:**
+
 - **[Multi-Bot System Guide](MULTI-BOT-SYSTEM.md)** - Bot configuration
 - **[Bot Configuration Documentation](BOT-CONFIGURATION.md)** - Detailed setup guide
 
@@ -504,11 +528,12 @@ For first-time users, follow these steps in order:
 
 - **🚨 I'm getting 'ERR_BAD_REQUEST' with status code 403 when starting the autopricer. What's wrong?**  
   This error means your API keys are not configured correctly in `config.json`. Make sure you have:
+
   - Replaced `"your bptf api key"` with your actual backpack.tf API key
-  - Replaced `"your bptf token"` with your actual backpack.tf token  
+  - Replaced `"your bptf token"` with your actual backpack.tf token
   - Replaced `"your steam api key"` with your actual Steam API key
   - Set up your database credentials correctly
-  
+
   Get your API keys from [backpack.tf/developer](https://backpack.tf/developer) and [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey).
 
 - **🤖 How do I set up multiple bots or switch between bot configurations?**  

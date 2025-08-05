@@ -33,12 +33,12 @@ try {
 const PORT = config.port;
 
 function mountRoutes() {
-  require('./routes/pricelist')(app, config);
-  require('./routes/trades')(app, config);
+  require('./routes/pricelist')(app, config, configManager);
+  require('./routes/trades')(app, config, configManager);
   require('./routes/key-prices')(app, config);
-  require('./routes/actions')(app, config);
+  require('./routes/actions')(app, config, configManager);
   require('./routes/logs')(app, config);
-  require('./routes/pnl')(app, config);
+  require('./routes/pnl')(app, config, configManager);
   require('./routes/bounds')(app, config);
 
   // Add bot management routes
