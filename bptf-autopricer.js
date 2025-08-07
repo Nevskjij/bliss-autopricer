@@ -15,6 +15,7 @@ const SCHEMA_PATH = './schema.json';
 const PRICELIST_PATH = './files/pricelist.json';
 const ITEM_LIST_PATH = './files/item_list.json';
 const { listen, socketIO } = require('./API/server.js');
+const { setWebSocketStatsProvider } = require('./API/routes/websocket-status.js');
 const { startPriceWatcher } = require('./modules/index');
 const scheduleTasks = require('./modules/scheduler');
 const { getBptfPrices, getAllPricedItemNamesWithEffects } = require('./modules/bptfPriceFetcher');
@@ -1229,7 +1230,7 @@ const finalisePrice = async (arr, name, sku) => {
 };
 
 // Initialize the websocket and pass in dependencies
-initBptfWebSocket({
+const bptfWebSocket = initBptfWebSocket({
   getAllowedItemNames,
   allowAllItems,
   schemaManager,
@@ -1242,6 +1243,38 @@ initBptfWebSocket({
   excludedListingDescriptions,
   blockedAttributes,
   logFile,
+});
+
+// Provide websocket stats to the API
+setWebSocketStatsProvider(() => bptfWebSocket.getStats());
+
+// Add websocket health monitoring to the periodic tasks
+setInterval(() => {
+  const stats = bptfWebSocket.getStats();
+  const timeSinceLastMessage = Math.round(stats.timeSinceLastMessage / 1000);
+
+  if (timeSinceLastMessage > 300) {
+    // 5 minutes
+    console.warn(`[HEALTH] WebSocket hasn't received messages for ${timeSinceLastMessage}s`);
+  }
+
+  // Log periodic health status
+  console.log(
+    `[HEALTH] WebSocket: ${stats.messageCount} messages, last ${timeSinceLastMessage}s ago, connected: ${stats.isConnected}`
+  );
+}, 60000); // Check every minute
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, closing websocket...');
+  bptfWebSocket.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, closing websocket...');
+  bptfWebSocket.close();
+  process.exit(0);
 });
 
 listen();

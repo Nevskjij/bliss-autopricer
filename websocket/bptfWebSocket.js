@@ -1,10 +1,19 @@
 const fs = require('fs');
+const { clearInterval, setInterval } = require('timers');
 const ReconnectingWebSocket = require('reconnecting-websocket');
 const ws = require('ws');
+const { WebSocket } = require('ws');
 
 let insertQueue = [];
 let insertTimer = null;
 const INSERT_BATCH_INTERVAL = 10000; // ms
+
+// Connection health monitoring
+let lastMessageTime = Date.now();
+let messageCount = 0;
+let healthCheckInterval = null;
+const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
+const MESSAGE_TIMEOUT = 120000; // 2 minutes without messages triggers reconnect
 
 function logWebSocketEvent(logFile, message) {
   const timestamp = new Date().toISOString();
@@ -24,12 +33,60 @@ function initBptfWebSocket({
   logFile,
   onListingUpdate,
 }) {
-  const rws = new ReconnectingWebSocket('wss://ws.backpack.tf/events/', undefined, {
+  // Enhanced reconnection options
+  const reconnectOptions = {
     WebSocket: ws,
     headers: {
       'batch-test': true,
     },
-  });
+    // More aggressive reconnection settings
+    connectionTimeout: 5000, // 5 seconds
+    maxRetries: Infinity,
+    maxReconnectionDelay: 30000, // Max 30 seconds between reconnects
+    minReconnectionDelay: 1000, // Min 1 second between reconnects
+    reconnectionDelayGrowFactor: 1.3, // Exponential back-off factor
+    minUptime: 5000, // Connection must be up for 5 seconds to be considered stable
+    debug: false,
+  };
+
+  const rws = new ReconnectingWebSocket(
+    'wss://ws.backpack.tf/events/',
+    undefined,
+    reconnectOptions
+  );
+
+  // Health monitoring function
+  function startHealthMonitoring() {
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+    }
+
+    healthCheckInterval = setInterval(() => {
+      const timeSinceLastMessage = Date.now() - lastMessageTime;
+
+      if (timeSinceLastMessage > MESSAGE_TIMEOUT) {
+        const msg = `[WebSocket] No messages received for ${Math.round(timeSinceLastMessage / 1000)}s, forcing reconnect`;
+        console.warn(msg);
+        logWebSocketEvent(logFile, msg);
+
+        // Force reconnection by closing the connection
+        if (rws.readyState === WebSocket.OPEN) {
+          rws.reconnect();
+        }
+      } else {
+        // Log periodic health status
+        const msg = `[WebSocket] Health check: ${messageCount} messages received, last message ${Math.round(timeSinceLastMessage / 1000)}s ago`;
+        logWebSocketEvent(logFile, msg);
+      }
+    }, HEALTH_CHECK_INTERVAL);
+  }
+
+  function stopHealthMonitoring() {
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+      healthCheckInterval = null;
+    }
+  }
 
   async function flushInsertQueue() {
     if (insertQueue.length === 0) {
@@ -147,12 +204,20 @@ function initBptfWebSocket({
     const msg = '[WebSocket] Connected to bptf socket.';
     console.log(msg);
     logWebSocketEvent(logFile, msg);
+
+    // Reset health monitoring
+    lastMessageTime = Date.now();
+    messageCount = 0;
+    startHealthMonitoring();
   });
 
   rws.addEventListener('close', (event) => {
     const msg = `[WebSocket] bptf Socket connection closed. ${event.reason || ''}`;
     console.warn(msg);
     logWebSocketEvent(logFile, msg);
+
+    // Stop health monitoring when connection closes
+    stopHealthMonitoring();
   });
 
   rws.addEventListener('error', (event) => {
@@ -162,6 +227,10 @@ function initBptfWebSocket({
   });
 
   rws.addEventListener('message', (event) => {
+    // Update message tracking for health monitoring
+    lastMessageTime = Date.now();
+    messageCount++;
+
     var json = JSON.parse(event.data);
     if (json instanceof Array) {
       let updateCount = 0;
@@ -183,7 +252,19 @@ function initBptfWebSocket({
     }
   });
 
-  return rws;
+  return {
+    websocket: rws,
+    close: () => {
+      stopHealthMonitoring();
+      rws.close();
+    },
+    getStats: () => ({
+      messageCount,
+      lastMessageTime,
+      timeSinceLastMessage: Date.now() - lastMessageTime,
+      isConnected: rws.readyState === WebSocket.OPEN,
+    }),
+  };
 }
 
 module.exports = { initBptfWebSocket };

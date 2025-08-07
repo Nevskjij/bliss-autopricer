@@ -1,4 +1,5 @@
-const fetch = require('node-fetch');
+// Use built-in fetch (Node.js 18+) or fall back to node-fetch for older versions
+const fetch = globalThis.fetch || require('node-fetch');
 
 /**
  * Fetches the lowest Steam Community Market price for a given item.
@@ -25,7 +26,7 @@ async function getSCMPrice(marketHashName, currency = 'USD') {
     const priceStr = data.lowest_price.replace(/[^\d.,]/g, '').replace(',', '.');
     const price = parseFloat(priceStr);
     return isNaN(price) ? null : price;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

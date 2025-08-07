@@ -82,6 +82,7 @@ module.exports = function renderPage(title, bodyContent) {
       <a href="/pnl">Profit/Loss</a>
       <a href="/trades">Trade History</a>
       <a href="/logs">Logs</a>
+      <a href="/bot-config">🤖 Bot Config</a>
     </nav>
     <div class="container">
       ${bodyContent}

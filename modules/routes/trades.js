@@ -6,103 +6,115 @@ function loadJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-module.exports = function (app, config) {
+module.exports = function (app, config, configManager) {
   app.get('/trades', (req, res) => {
-    const pollDataPath = path.resolve(
-      __dirname,
-      config.tf2AutobotDir,
-      config.botTradingDir,
-      'polldata.json'
-    );
-    const pricelistPath = path.resolve(__dirname, '../../files/pricelist.json');
-    const pricelist = loadJson(pricelistPath);
-    const keyPrice = pricelist.items.find((i) => i.sku === '5021;6')?.sell?.metal || 68.11;
-
-    const currencyMap = {
-      '5000;6': 'Scrap Metal',
-      '5001;6': 'Reclaimed Metal',
-      '5002;6': 'Refined Metal',
-      '5021;6': 'Mann Co. Supply Crate Key',
-    };
-    const skuToName = {
-      ...currencyMap,
-      ...Object.fromEntries(pricelist.items.map((item) => [item.sku, item.name])),
-    };
-
-    let trades = [];
-    let cumulativeProfit = 0;
     try {
-      const raw = fs.readFileSync(pollDataPath, 'utf8');
-      const parsed = JSON.parse(raw);
-      const data = parsed.offerData;
+      const selectedBot = configManager.getSelectedBot();
+      if (!selectedBot) {
+        const html = `
+          <div style="text-align: center; margin-top: 50px;">
+            <h2>⚠️ No Bot Configuration Found</h2>
+            <p>You need to configure a bot before viewing trade history.</p>
+            <p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Configure Bot</a></p>
+          </div>
+        `;
+        return res.send(renderPage('Trade History - No Bot Configured', html));
+      }
 
-      trades = Object.entries(data)
-        .map(([id, trade]) => {
-          const accepted = trade.action?.action === 'accept' || trade.isAccepted;
-          const profileUrl = trade.partner
-            ? `https://steamcommunity.com/profiles/${trade.partner}`
-            : '#';
-          const name = trade.partner || 'Unknown';
-          const timeRaw = trade.time || trade.actionTimestamp || Date.now();
-          const timestamp = timeRaw > 2000000000 ? new Date(timeRaw) : new Date(timeRaw * 1000);
-          const time = timestamp.toLocaleString();
+      const pollDataPath = path.resolve(
+        selectedBot.tf2AutobotDir,
+        selectedBot.botTradingDir,
+        'polldata.json'
+      );
+      const pricelistPath = path.resolve(__dirname, '../../files/pricelist.json');
+      const pricelist = loadJson(pricelistPath);
+      const keyPrice = pricelist.items.find((i) => i.sku === '5021;6')?.sell?.metal || 68.11;
 
-          const itemsOur = trade.dict?.our || {};
-          const itemsTheir = trade.dict?.their || {};
-          const valueOur = trade.value?.our || { keys: 0, metal: 0 };
-          const valueTheir = trade.value?.their || { keys: 0, metal: 0 };
+      const currencyMap = {
+        '5000;6': 'Scrap Metal',
+        '5001;6': 'Reclaimed Metal',
+        '5002;6': 'Refined Metal',
+        '5021;6': 'Mann Co. Supply Crate Key',
+      };
+      const skuToName = {
+        ...currencyMap,
+        ...Object.fromEntries(pricelist.items.map((item) => [item.sku, item.name])),
+      };
 
-          const metalOut = valueOur.keys * keyPrice + valueOur.metal;
-          const metalIn = valueTheir.keys * keyPrice + valueTheir.metal;
-          const profit = metalIn - metalOut;
+      let trades = [];
+      let cumulativeProfit = 0;
+      try {
+        const raw = fs.readFileSync(pollDataPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        const data = parsed.offerData;
 
-          if (accepted) {
-            cumulativeProfit += profit;
-          }
+        trades = Object.entries(data)
+          .map(([id, trade]) => {
+            const accepted = trade.action?.action === 'accept' || trade.isAccepted;
+            const profileUrl = trade.partner
+              ? `https://steamcommunity.com/profiles/${trade.partner}`
+              : '#';
+            const name = trade.partner || 'Unknown';
+            const timeRaw = trade.time || trade.actionTimestamp || Date.now();
+            const timestamp = timeRaw > 2000000000 ? new Date(timeRaw) : new Date(timeRaw * 1000);
+            const time = timestamp.toLocaleString();
 
-          const statusFlags = [];
-          if (trade.isAccepted) {
-            statusFlags.push('✅ Accepted');
-          }
-          if (trade.isDeclined) {
-            statusFlags.push('❌ Declined');
-          }
-          if (trade.isInvalid) {
-            statusFlags.push('⚠️ Invalid');
-          }
-          if (trade.action?.action?.toLowerCase().includes('counter')) {
-            statusFlags.push('↩️ Countered');
-          }
-          if (trade.action?.action === 'skip') {
-            statusFlags.push('⏭️ Skipped');
-          }
+            const itemsOur = trade.dict?.our || {};
+            const itemsTheir = trade.dict?.their || {};
+            const valueOur = trade.value?.our || { keys: 0, metal: 0 };
+            const valueTheir = trade.value?.their || { keys: 0, metal: 0 };
 
-          return {
-            id,
-            profileUrl,
-            name,
-            time,
-            timestamp: timestamp.getTime(), // Add this line
-            accepted,
-            itemsOur,
-            itemsTheir,
-            valueOur,
-            valueTheir,
-            profit,
-            action: trade.action?.action || 'unknown',
-            reason: trade.action?.reason || '',
-            status: statusFlags.join('<br>') || '⚠️ Unmarked',
-          };
-        })
-        .sort((a, b) => b.timestamp - a.timestamp); // Sort by timestamp, descending
-    } catch (e) {
-      console.error('Error loading polldata:', e);
-      return res.status(500).send('Failed to load trade history');
-    }
+            const metalOut = valueOur.keys * keyPrice + valueOur.metal;
+            const metalIn = valueTheir.keys * keyPrice + valueTheir.metal;
+            const profit = metalIn - metalOut;
 
-    const rows = trades
-      .map(
-        (t) => `
+            if (accepted) {
+              cumulativeProfit += profit;
+            }
+
+            const statusFlags = [];
+            if (trade.isAccepted) {
+              statusFlags.push('✅ Accepted');
+            }
+            if (trade.isDeclined) {
+              statusFlags.push('❌ Declined');
+            }
+            if (trade.isInvalid) {
+              statusFlags.push('⚠️ Invalid');
+            }
+            if (trade.action?.action?.toLowerCase().includes('counter')) {
+              statusFlags.push('↩️ Countered');
+            }
+            if (trade.action?.action === 'skip') {
+              statusFlags.push('⏭️ Skipped');
+            }
+
+            return {
+              id,
+              profileUrl,
+              name,
+              time,
+              timestamp: timestamp.getTime(), // Add this line
+              accepted,
+              itemsOur,
+              itemsTheir,
+              valueOur,
+              valueTheir,
+              profit,
+              action: trade.action?.action || 'unknown',
+              reason: trade.action?.reason || '',
+              status: statusFlags.join('<br>') || '⚠️ Unmarked',
+            };
+          })
+          .sort((a, b) => b.timestamp - a.timestamp); // Sort by timestamp, descending
+      } catch (e) {
+        console.error('Error loading polldata:', e);
+        return res.status(500).send('Failed to load trade history');
+      }
+
+      const rows = trades
+        .map(
+          (t) => `
       <tr data-status="${t.action}">
         <td><a href="${t.profileUrl}" target="_blank">${t.id}</a><br><small>${t.name}</small></td>
         <td>${t.time}</td>
@@ -123,10 +135,10 @@ module.exports = function (app, config) {
         </td>
       </tr>
     `
-      )
-      .join('');
+        )
+        .join('');
 
-    const html = `
+      const html = `
       <h1>Trade History</h1>
       <label for="statusFilter"><strong>Filter by Status:</strong></label>
       <select id="statusFilter" onchange="filterTrades()">
@@ -163,6 +175,17 @@ module.exports = function (app, config) {
       </script>
     `;
 
-    res.send(renderPage('Trade History', html));
+      res.send(renderPage('Trade History', html));
+    } catch (error) {
+      console.error('Error loading trade history:', error);
+      const html = `
+        <div style="text-align: center; margin-top: 50px;">
+          <h2>❌ Error Loading Trade History</h2>
+          <p>${error.message}</p>
+          <p><a href="/bot-config">🤖 Check Bot Configuration</a></p>
+        </div>
+      `;
+      res.send(renderPage('Trade History - Error', html));
+    }
   });
 };

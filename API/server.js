@@ -16,8 +16,10 @@ const config = require('../config.json');
 
 // API routes.
 const items_endpoint = require('./routes/api/items.js');
+const { router: websocketStatus } = require('./routes/websocket-status.js');
 
 app.use('/items', items_endpoint);
+app.use('/websocket-status', websocketStatus);
 
 const port = config.pricerPort || 3456;
 
