@@ -14,13 +14,26 @@ module.exports = function (app, config, configManager) {
       throw new Error('No bot selected. Please configure a bot first.');
     }
 
+    // Use the pre-calculated pricelistPath if available, otherwise construct it
+    let sellingPricelistPath;
+    if (selectedBot.pricelistPath) {
+      sellingPricelistPath = selectedBot.pricelistPath;
+    } else {
+      const tf2autobotPath = selectedBot.tf2autobotPath || selectedBot.tf2AutobotDir;
+      const botDirectory = selectedBot.botDirectory || selectedBot.botTradingDir;
+
+      if (!tf2autobotPath || !botDirectory) {
+        throw new Error(
+          `Missing bot path configuration. tf2autobotPath: ${tf2autobotPath}, botDirectory: ${botDirectory}`
+        );
+      }
+
+      sellingPricelistPath = path.resolve(tf2autobotPath, botDirectory, 'pricelist.json');
+    }
+
     return {
       pricelistPath: path.resolve(__dirname, '../../files/pricelist.json'),
-      sellingPricelistPath: path.resolve(
-        selectedBot.tf2AutobotDir,
-        selectedBot.botTradingDir,
-        'pricelist.json'
-      ),
+      sellingPricelistPath,
       itemListPath: path.resolve(__dirname, '../../files/item_list.json'),
     };
   }

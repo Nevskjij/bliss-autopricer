@@ -19,8 +19,8 @@ module.exports = function (app, config, configManager) {
 
     return {
       pollDataPath: path.resolve(
-        selectedBot.tf2AutobotDir,
-        selectedBot.botTradingDir,
+        selectedBot.tf2autobotPath || selectedBot.tf2AutobotDir,
+        selectedBot.botDirectory || selectedBot.botTradingDir,
         'polldata.json'
       ),
       pricelistPath: path.resolve(__dirname, '../../files/pricelist.json'),
