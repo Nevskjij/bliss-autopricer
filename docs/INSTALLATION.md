@@ -79,6 +79,7 @@ npm run setup
 ```
 
 This command will:
+
 - Auto-discover your tf2autobot installations
 - Create and configure multi-bot support
 - Set up database connections
@@ -87,11 +88,13 @@ This command will:
 ### Option B: Manual Configuration
 
 1. Copy the example configuration:
+
 ```bash
 cp pricerConfig.json.example pricerConfig.json
 ```
 
 2. Edit `pricerConfig.json` with your settings:
+
 ```json
 {
   "selectedBot": "main-bot",
@@ -128,6 +131,7 @@ Edit your bot's `config.json` file and ensure you have:
 ```
 
 **Get your API keys:**
+
 - **Backpack.tf API**: [backpack.tf/api/register](https://backpack.tf/api/register)
 - **Steam API Key**: [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)
 
@@ -138,6 +142,7 @@ npm run validate-config
 ```
 
 This will check:
+
 - Database connectivity
 - API key validity
 - Bot configuration
@@ -166,6 +171,7 @@ npm start
 Visit: `http://localhost:3000`
 
 The web interface provides:
+
 - Bot selection and management
 - Price monitoring dashboard
 - Configuration management

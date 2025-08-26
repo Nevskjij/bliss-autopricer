@@ -33,71 +33,165 @@ module.exports = (app) => {
         },
       };
 
-      res.send(
-        renderPage(
-          'Key Prices (Last 14 Days)',
-          `
-        <body>
-          <h1>Key Prices (Last 14 Days)</h1>
-          <canvas id="priceChart" width="1000" height="400"></canvas>
-          <p><strong>Buy Price Mean:</strong> ${stats.buy.mean}, <strong>Std Dev:</strong> ${stats.buy.std}</p>
-          <p><strong>Sell Price Mean:</strong> ${stats.sell.mean}, <strong>Std Dev:</strong> ${stats.sell.std}</p>
-          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-		  <script>
-            const ctx = document.getElementById('priceChart').getContext('2d');
-            new Chart(ctx, {
-              type: 'line',
-              data: {
-                labels: ${JSON.stringify(timestamps)},
-                datasets: [
-                  {
-                    label: 'Buy Price',
-                    data: ${JSON.stringify(buyPrices)},
-                    borderColor: 'green',
-                    fill: false,
-                    tension: 0.3
-                  },
-                  {
-                    label: 'Sell Price',
-                    data: ${JSON.stringify(sellPrices)},
-                    borderColor: 'red',
-                    fill: false,
-                    tension: 0.3
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                plugins: {
-                  title: {
-                    display: true,
-                    text: 'Key Price Trends'
+      // Build the page content with modern styling
+      let html = '<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">';
+
+      // Header
+      html +=
+        '<div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">';
+      html += '<h2>📈 Key Price Analytics</h2>';
+      html +=
+        '<p>Monitor Mann Co. Supply Crate Key price trends over the last 14 days to make informed trading decisions.</p>';
+      html += '</div>';
+
+      // Statistics Cards
+      html += '<div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">';
+
+      // Buy Price Stats
+      html +=
+        '<div style="flex: 1; min-width: 300px; background: #e8f4fd; padding: 15px; border-radius: 8px;">';
+      html += '<h3 style="color: #28a745; margin-top: 0;">🟢 Buy Price Statistics</h3>';
+      html += `<p><strong>Average:</strong> ${stats.buy.mean} Refined Metal</p>`;
+      html += `<p><strong>Standard Deviation:</strong> ${stats.buy.std}</p>`;
+      html += `<p><strong>Data Points:</strong> ${buyPrices.length}</p>`;
+      html += '</div>';
+
+      // Sell Price Stats
+      html +=
+        '<div style="flex: 1; min-width: 300px; background: #fff3cd; padding: 15px; border-radius: 8px;">';
+      html += '<h3 style="color: #dc3545; margin-top: 0;">🔴 Sell Price Statistics</h3>';
+      html += `<p><strong>Average:</strong> ${stats.sell.mean} Refined Metal</p>`;
+      html += `<p><strong>Standard Deviation:</strong> ${stats.sell.std}</p>`;
+      html += `<p><strong>Data Points:</strong> ${sellPrices.length}</p>`;
+      html += '</div>';
+
+      html += '</div>';
+
+      // Chart Container
+      html +=
+        '<div style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">';
+      html += '<div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid #ddd;">';
+      html += '<h3 style="margin: 0;">📊 Price Trend Chart</h3>';
+      html +=
+        '<p style="margin: 5px 0 0 0; color: #666;">Interactive chart showing buy and sell price movements</p>';
+      html += '</div>';
+      html += '<div style="padding: 20px;">';
+      html += '<canvas id="priceChart" width="1000" height="400"></canvas>';
+      html += '</div>';
+      html += '</div>';
+
+      // Data insights
+      if (data.length > 0) {
+        const latestBuy = buyPrices[buyPrices.length - 1];
+        const latestSell = sellPrices[sellPrices.length - 1];
+        const spread = latestSell - latestBuy;
+
+        html +=
+          '<div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 8px;">';
+        html += '<h4>💡 Current Market Insights</h4>';
+        html += `<p><strong>Latest Buy Price:</strong> ${latestBuy.toFixed(2)} Refined Metal</p>`;
+        html += `<p><strong>Latest Sell Price:</strong> ${latestSell.toFixed(2)} Refined Metal</p>`;
+        html += `<p><strong>Current Spread:</strong> ${spread.toFixed(2)} Refined Metal</p>`;
+        html += `<p><strong>Profit Margin:</strong> ${((spread / latestBuy) * 100).toFixed(2)}%</p>`;
+        html += '</div>';
+      }
+
+      html += '</div>';
+
+      // Add the chart script
+      html += `
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+          const ctx = document.getElementById('priceChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ${JSON.stringify(timestamps)},
+              datasets: [
+                {
+                  label: 'Buy Price',
+                  data: ${JSON.stringify(buyPrices)},
+                  borderColor: '#28a745',
+                  backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                  fill: false,
+                  tension: 0.3,
+                  pointBackgroundColor: '#28a745',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2
+                },
+                {
+                  label: 'Sell Price',
+                  data: ${JSON.stringify(sellPrices)},
+                  borderColor: '#dc3545',
+                  backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                  fill: false,
+                  tension: 0.3,
+                  pointBackgroundColor: '#dc3545',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                title: {
+                  display: true,
+                  text: 'Mann Co. Supply Crate Key Price Trends (Last 14 Days)',
+                  font: {
+                    size: 16,
+                    weight: 'bold'
                   }
                 },
-                scales: {
-                  y: {
-                    title: {
-                      display: true,
-                      text: 'Metal'
+                legend: {
+                  position: 'top',
+                }
+              },
+              scales: {
+                y: {
+                  title: {
+                    display: true,
+                    text: 'Price (Refined Metal)',
+                    font: {
+                      weight: 'bold'
                     }
                   },
-                  x: {
-                    title: {
-                      display: true,
-                      text: 'Time'
+                  beginAtZero: false
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Date & Time',
+                    font: {
+                      weight: 'bold'
                     }
                   }
                 }
+              },
+              interaction: {
+                intersect: false,
+                mode: 'index'
               }
-            });
-          </script>
-        </body>
-      `
-        )
-      );
+            }
+          });
+        </script>
+      `;
+
+      res.send(renderPage('Key Price Analytics', html));
     } catch (err) {
       console.error('Failed to load key prices:', err);
-      res.status(500).send('Could not retrieve key price data.');
+
+      let html = '<div style="max-width: 800px; margin: 0 auto; padding: 20px;">';
+      html +=
+        '<div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; text-align: center;">';
+      html += '<h2>❌ Error Loading Key Price Data</h2>';
+      html += '<p>Could not retrieve key price data from the database.</p>';
+      html += `<p><strong>Error:</strong> ${err.message}</p>`;
+      html += '<p>This could indicate a database connection issue or missing data table.</p>';
+      html += '</div>';
+      html += '</div>';
+
+      res.status(500).send(renderPage('Key Prices - Error', html));
     }
   });
 };

@@ -1,5 +1,3 @@
-// eslint-disable-next-line spellcheck/spell-checker
-/* eslint-disable no-unused-vars */
 // routes/pnl.js
 const path = require('path');
 const fs = require('fs');
@@ -32,13 +30,16 @@ module.exports = function (app, config, configManager) {
       // Check if bot is configured
       const selectedBot = configManager.getSelectedBot();
       if (!selectedBot) {
-        const html = `
-          <div style="text-align: center; margin-top: 50px;">
-            <h2>⚠️ No Bot Configuration Found</h2>
-            <p>You need to configure a bot before viewing P&L data.</p>
-            <p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Configure Bot</a></p>
-          </div>
-        `;
+        let html = '<div style="max-width: 800px; margin: 0 auto; padding: 20px;">';
+        html +=
+          '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; text-align: center;">';
+        html += '<h2>⚠️ No Bot Configuration Found</h2>';
+        html += '<p>You need to configure a bot before viewing profit and loss data.</p>';
+        html += "<p>The P&L dashboard requires access to your bot's trade history files.</p>";
+        html +=
+          '<p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Configure Bot</a></p>';
+        html += '</div>';
+        html += '</div>';
         return res.send(renderPage('P&L Dashboard - No Bot Configured', html));
       }
 
@@ -51,9 +52,23 @@ module.exports = function (app, config, configManager) {
         const raw = fs.readFileSync(paths.pollDataPath, 'utf8');
         parsed = JSON.parse(raw);
       } catch {
-        return res
-          .status(500)
-          .send(renderPage('P&L Dashboard', '<p>Error loading trade data.</p>'));
+        let html = '<div style="max-width: 800px; margin: 0 auto; padding: 20px;">';
+        html +=
+          '<div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; text-align: center;">';
+        html += '<h2>❌ Error Loading Trade Data</h2>';
+        html += "<p>Unable to load trade history from the bot's polldata.json file.</p>";
+        html += `<p><strong>Expected file location:</strong><br><code>${paths.pollDataPath}</code></p>`;
+        html += '<p>This could indicate:</p>';
+        html += '<ul style="text-align: left; display: inline-block;">';
+        html += '<li>The bot has not processed any trades yet</li>';
+        html += '<li>The polldata.json file is missing or corrupted</li>';
+        html += '<li>Incorrect bot configuration paths</li>';
+        html += '</ul>';
+        html +=
+          '<p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Check Bot Config</a></p>';
+        html += '</div>';
+        html += '</div>';
+        return res.status(500).send(renderPage('P&L Dashboard - Error', html));
       }
 
       const history = Object.values(parsed.offerData || {}).filter((t) => t.isAccepted);
@@ -123,81 +138,180 @@ module.exports = function (app, config, configManager) {
         .sort(([, a], [, b]) => b.profit - a.profit)
         .slice(0, 10);
 
-      const sortedByQty = Object.entries(summary)
-        .sort(([, a], [, b]) => b.qty - a.qty)
-        .slice(0, 10);
+      let html = '<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">';
 
-      const breakdownTable = sortedByProfit
-        .map(
-          ([sku, data]) =>
-            `<tr><td>${sku}</td><td>${data.qty}</td><td>${data.profit.toFixed(2)} Ref</td></tr>`
-        )
-        .join('');
+      // Header
+      html +=
+        '<div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">';
+      html += '<h2>💰 Profit & Loss Dashboard</h2>';
+      html +=
+        '<p>Track your trading performance with detailed profit analysis and trend visualization.</p>';
+      html += '</div>';
 
-      const html = `
-        <h1>Profit & Loss Dashboard</h1>
-        <div class="chart-fullscreen">
-            <canvas id="profitOverTime"></canvas>
-        </div>
-        <!-- Load correct versions -->
+      // Summary Statistics
+      html += '<div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">';
+
+      // Total Profit Card
+      const profitColor = totalProfit >= 0 ? '#28a745' : '#dc3545';
+      const profitIcon = totalProfit >= 0 ? '📈' : '📉';
+      html +=
+        '<div style="flex: 1; min-width: 250px; background: #e8f4fd; padding: 15px; border-radius: 8px;">';
+      html += `<h3 style="color: ${profitColor}; margin-top: 0;">${profitIcon} Total Net Profit</h3>`;
+      html += `<p style="font-size: 24px; font-weight: bold; color: ${profitColor}; margin: 10px 0;">${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(2)} Refined</p>`;
+      html += `<p><strong>Trades Analyzed:</strong> ${history.length}</p>`;
+      html += '</div>';
+
+      // Key Price Card
+      html +=
+        '<div style="flex: 1; min-width: 250px; background: #fff3cd; padding: 15px; border-radius: 8px;">';
+      html += '<h3 style="margin-top: 0;">🔑 Key Price Used</h3>';
+      html += `<p style="font-size: 18px; font-weight: bold; margin: 10px 0;">${keyPrice ? keyPrice.toFixed(2) : 'N/A'} Refined</p>`;
+      html += '<p>Used for profit calculations</p>';
+      html += '</div>';
+
+      html += '</div>';
+
+      // Chart Container
+      html +=
+        '<div style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">';
+      html += '<div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid #ddd;">';
+      html += '<h3 style="margin: 0;">📊 Cumulative Profit Over Time</h3>';
+      html +=
+        '<p style="margin: 5px 0 0 0; color: #666;">Track your profit growth across all completed trades</p>';
+      html += '</div>';
+      html +=
+        '<div class="chart-fullscreen" style="position: relative; height: 400px; padding: 20px;">';
+      html += '<canvas id="profitOverTime" style="width: 100%; height: 100%;"></canvas>';
+      html += '</div>';
+      html += '</div>';
+
+      // Top Items by Profit
+      if (sortedByProfit.length > 0) {
+        html +=
+          '<div style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">';
+        html += '<div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid #ddd;">';
+        html += '<h3 style="margin: 0;">🏆 Top Items by Profit Contribution</h3>';
+        html +=
+          '<p style="margin: 5px 0 0 0; color: #666;">Items that contributed most to your overall profit</p>';
+        html += '</div>';
+        html += '<div style="padding: 20px;">';
+        html += '<table style="width: 100%; border-collapse: collapse;">';
+        html += '<thead>';
+        html += '<tr style="background: #f8f9fa;">';
+        html +=
+          '<th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">SKU</th>';
+        html +=
+          '<th style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">Quantity Traded</th>';
+        html +=
+          '<th style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">Profit Contribution</th>';
+        html += '</tr>';
+        html += '</thead>';
+        html += '<tbody>';
+
+        sortedByProfit.forEach(([sku, data], index) => {
+          const rowStyle = index % 2 === 0 ? 'background: #f9f9f9;' : '';
+          const profitColor = data.profit >= 0 ? '#28a745' : '#dc3545';
+          html += `<tr style="${rowStyle}">`;
+          html += `<td style="padding: 12px; border-bottom: 1px solid #eee;"><code>${sku}</code></td>`;
+          html += `<td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">${data.qty}</td>`;
+          html += `<td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; color: ${profitColor}; font-weight: bold;">${data.profit >= 0 ? '+' : ''}${data.profit.toFixed(2)} Ref</td>`;
+          html += '</tr>';
+        });
+
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+
+      // Chart.js scripts
+      html += `
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.3/build/global/luxon.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 
         <script>
-        // ✅ Don't re-register the adapter manually at all.
-        // Chart.js will pick it up automatically with correct script order.
-
-        const ctxProfit = document.getElementById('profitOverTime').getContext('2d');
-        new Chart(ctxProfit, {
+          const ctxProfit = document.getElementById('profitOverTime').getContext('2d');
+          new Chart(ctxProfit, {
             type: 'line',
             data: {
-            datasets: [{
-                label: 'Cumulative Profit',
+              datasets: [{
+                label: 'Cumulative Profit (Refined Metal)',
                 data: ${JSON.stringify(profitPoints)},
-                borderColor: 'green',
-                backgroundColor: 'rgba(0,255,0,0.1)',
+                borderColor: '${totalProfit >= 0 ? '#28a745' : '#dc3545'}',
+                backgroundColor: '${totalProfit >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}',
                 fill: true,
                 parsing: {
-                xAxisKey: 'x',
-                yAxisKey: 'y'
+                  xAxisKey: 'x',
+                  yAxisKey: 'y'
                 },
-                tension: 0.2
-            }]
+                tension: 0.2,
+                pointBackgroundColor: '${totalProfit >= 0 ? '#28a745' : '#dc3545'}',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+              }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
                 x: {
-                    type: 'time',
-                    time: { unit: 'day' },
-                    title: { display: true, text: 'Date' }
+                  type: 'time',
+                  time: { unit: 'day' },
+                  title: { 
+                    display: true, 
+                    text: 'Date',
+                    font: { weight: 'bold' }
+                  }
                 },
                 y: {
-                    title: { display: true, text: 'Refined Metal' }
+                  title: { 
+                    display: true, 
+                    text: 'Cumulative Profit (Refined Metal)',
+                    font: { weight: 'bold' }
+                  }
                 }
+              },
+              plugins: {
+                legend: { 
+                  display: true, 
+                  position: 'top' 
                 },
-                plugins: {
-                legend: { display: true, position: 'top' }
+                title: {
+                  display: true,
+                  text: 'Profit Growth Over Time',
+                  font: {
+                    size: 16,
+                    weight: 'bold'
+                  }
                 }
+              },
+              interaction: {
+                intersect: false,
+                mode: 'index'
+              }
             }
-        });
+          });
         </script>
-    `;
+      `;
 
-      res.send(renderPage('P&L Dashboard', html));
+      res.send(renderPage('Profit & Loss Dashboard', html));
     } catch (error) {
       console.error('Error in PnL route:', error);
-      const errorHtml = `
-        <div style="text-align: center; margin-top: 50px;">
-          <h2>⚠️ Error Loading P&L Data</h2>
-          <p>There was an error loading the profit and loss data.</p>
-          <p>Please check that your bot configuration is correct and try again.</p>
-          <p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Check Bot Config</a></p>
-        </div>
-      `;
-      res.status(500).send(renderPage('P&L Dashboard - Error', errorHtml));
+      let html = '<div style="max-width: 800px; margin: 0 auto; padding: 20px;">';
+      html +=
+        '<div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; text-align: center;">';
+      html += '<h2>⚠️ Error Loading P&L Data</h2>';
+      html += '<p>There was an error loading the profit and loss data.</p>';
+      html += `<p><strong>Error details:</strong> ${error.message}</p>`;
+      html += '<p>Please check that your bot configuration is correct and try again.</p>';
+      html +=
+        '<p><a href="/bot-config" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">🤖 Check Bot Config</a></p>';
+      html += '</div>';
+      html += '</div>';
+      res.status(500).send(renderPage('P&L Dashboard - Error', html));
     }
   });
 

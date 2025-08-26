@@ -23,11 +23,13 @@ GET /api/items
 ```
 
 **Query Parameters**:
+
 - `sku` (string): Item SKU (e.g., "5021;6" for keys)
 - `name` (string): Item name
 - `limit` (number): Maximum results (default: 100)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -40,7 +42,7 @@ GET /api/items
         "metal": 67.33
       },
       "sell": {
-        "keys": 0, 
+        "keys": 0,
         "metal": 68.11
       },
       "time": 1640995200,
@@ -57,9 +59,11 @@ GET /api/items/:sku
 ```
 
 **Parameters**:
+
 - `sku` (string): Item SKU
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -83,6 +87,7 @@ GET /api/bot/current
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -104,13 +109,14 @@ GET /api/bots
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
   "bots": [
     {
       "id": "main-bot",
-      "name": "Main Trading Bot", 
+      "name": "Main Trading Bot",
       "status": "active"
     },
     {
@@ -129,6 +135,7 @@ POST /api/bot/switch
 ```
 
 **Request Body**:
+
 ```json
 {
   "botId": "unusual-bot"
@@ -136,6 +143,7 @@ POST /api/bot/switch
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -154,11 +162,13 @@ POST /bot/add
 **Content-Type**: `application/x-www-form-urlencoded`
 
 **Body**:
+
 ```
 sku=5021;6&min=1&max=1
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -175,11 +185,13 @@ POST /bot/remove
 **Content-Type**: `application/x-www-form-urlencoded`
 
 **Body**:
+
 ```
 sku=5021;6
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -196,11 +208,13 @@ POST /bot/edit
 **Content-Type**: `application/x-www-form-urlencoded`
 
 **Body**:
+
 ```
 sku=5021;6&min=1&max=2
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -225,6 +239,7 @@ GET /api/health
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -253,9 +268,11 @@ GET /api/key-prices
 ```
 
 **Query Parameters**:
+
 - `days` (number): Number of days of history (default: 14)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -270,7 +287,7 @@ GET /api/key-prices
   "stats": {
     "current_buy": 67.33,
     "current_sell": 68.11,
-    "avg_buy": 67.50,
+    "avg_buy": 67.5,
     "avg_sell": 68.25
   }
 }
@@ -300,6 +317,7 @@ socket.on('price', (data) => {
 ```
 
 **Event Data**:
+
 ```json
 {
   "sku": "5021;6",
@@ -320,6 +338,7 @@ socket.on('keyPrice', (data) => {
 ```
 
 **Event Data**:
+
 ```json
 {
   "buy": { "keys": 0, "metal": 67.33 },
@@ -339,6 +358,7 @@ socket.on('botSwitched', (data) => {
 ```
 
 **Event Data**:
+
 ```json
 {
   "previousBot": "main-bot",
@@ -358,6 +378,7 @@ socket.on('healthUpdate', (data) => {
 ```
 
 **Event Data**:
+
 ```json
 {
   "status": "healthy",
@@ -384,15 +405,15 @@ socket.on('healthUpdate', (data) => {
 
 ### Common Error Codes
 
-| Code | Description | HTTP Status |
-|------|-------------|-------------|
-| `INVALID_SKU` | Invalid item SKU format | 400 |
-| `ITEM_NOT_FOUND` | Item not found in database | 404 |
-| `BOT_NOT_FOUND` | Bot configuration not found | 404 |
-| `INVALID_CONFIG` | Invalid configuration | 400 |
-| `API_KEY_INVALID` | Invalid backpack.tf API key | 401 |
-| `RATE_LIMITED` | Too many requests | 429 |
-| `INTERNAL_ERROR` | Server error | 500 |
+| Code              | Description                 | HTTP Status |
+| ----------------- | --------------------------- | ----------- |
+| `INVALID_SKU`     | Invalid item SKU format     | 400         |
+| `ITEM_NOT_FOUND`  | Item not found in database  | 404         |
+| `BOT_NOT_FOUND`   | Bot configuration not found | 404         |
+| `INVALID_CONFIG`  | Invalid configuration       | 400         |
+| `API_KEY_INVALID` | Invalid backpack.tf API key | 401         |
+| `RATE_LIMITED`    | Too many requests           | 429         |
+| `INTERNAL_ERROR`  | Server error                | 500         |
 
 ## Rate Limiting
 
@@ -455,7 +476,8 @@ class AutopricerClient {
   // Add item to pricelist
   async addItem(sku, min, max) {
     try {
-      const response = await axios.post(`${this.baseUrl}/bot/add`, 
+      const response = await axios.post(
+        `${this.baseUrl}/bot/add`,
         `sku=${sku}&min=${min}&max=${max}`,
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
       );
@@ -474,7 +496,7 @@ class AutopricerClient {
   async switchBot(botId) {
     try {
       const response = await axios.post(`${this.baseUrl}/api/bot/switch`, {
-        botId: botId
+        botId: botId,
       });
       return response.data;
     } catch (error) {
@@ -487,17 +509,17 @@ class AutopricerClient {
 const client = new AutopricerClient();
 
 // Get key price
-client.getPrice('5021;6').then(price => {
+client.getPrice('5021;6').then((price) => {
   console.log('Key price:', price);
 });
 
 // Listen for updates
-client.onPriceUpdate(data => {
+client.onPriceUpdate((data) => {
   console.log('Price updated:', data);
 });
 
 // Add item to pricelist
-client.addItem('5021;6', 1, 1).then(result => {
+client.addItem('5021;6', 1, 1).then((result) => {
   console.log('Item added:', result);
 });
 ```
@@ -512,13 +534,13 @@ class AutopricerClient:
     def __init__(self, base_url='http://localhost:3000'):
         self.base_url = base_url
         self.sio = socketio.Client()
-        
+
     def get_price(self, sku):
         """Get item price by SKU"""
         response = requests.get(f"{self.base_url}/api/items/{sku}")
         response.raise_for_status()
         return response.json()['item']
-    
+
     def add_item(self, sku, min_qty, max_qty):
         """Add item to pricelist"""
         data = f"sku={sku}&min={min_qty}&max={max_qty}"
@@ -526,13 +548,13 @@ class AutopricerClient:
         response = requests.post(f"{self.base_url}/bot/add", data=data, headers=headers)
         response.raise_for_status()
         return response.json()
-    
+
     def connect_websocket(self):
         """Connect to WebSocket for real-time updates"""
         @self.sio.event
         def price(data):
             print(f"Price update: {data}")
-            
+
         self.sio.connect(self.base_url)
 
 # Usage
@@ -597,7 +619,7 @@ curl "http://localhost:3000/api/health"
   "data": {
     "sku": "5021;6",
     "name": "Mann Co. Supply Crate Key",
-    "oldPrice": { "buy": 67.00, "sell": 68.00 },
+    "oldPrice": { "buy": 67.0, "sell": 68.0 },
     "newPrice": { "buy": 67.33, "sell": 68.11 }
   }
 }
