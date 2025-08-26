@@ -28,10 +28,10 @@ class EnhancedSchemaManager {
       callback(null);
       return;
     }
-    
+
     this.initAttempted = true;
     console.log('🔄 [Schema] Initializing enhanced schema manager...');
-    
+
     this.tryInitWithRetries(callback, 1);
   }
 
@@ -42,18 +42,18 @@ class EnhancedSchemaManager {
    */
   async tryInitWithRetries(callback, attempt) {
     console.log(`🔄 [Schema] Attempt ${attempt}/${this.maxRetries}: Fetching Steam schema...`);
-    
+
     // Try the original init
     this.originalManager.init(async (err) => {
       if (err) {
         console.error(`❌ [Schema] Attempt ${attempt} failed:`, err.message);
-        
+
         // Check if this is the "retired" error
         if (this.isRetiredError(err)) {
           this.isRetiring = true;
           console.warn('🚨 [Schema] Steam reports GetSchemaItems as retired!');
         }
-        
+
         // If we haven't reached max retries, try again
         if (attempt < this.maxRetries) {
           console.log(`⏳ [Schema] Waiting ${this.retryDelay / 1000} seconds before retry...`);
@@ -62,9 +62,11 @@ class EnhancedSchemaManager {
           }, this.retryDelay);
           return;
         }
-        
+
         // All retries exhausted, try cached schema as fallback
-        console.error(`❌ [Schema] All ${this.maxRetries} attempts failed, trying cached schema...`);
+        console.error(
+          `❌ [Schema] All ${this.maxRetries} attempts failed, trying cached schema...`
+        );
         try {
           const hasCachedSchema = this.useCachedSchemaFallback();
           if (hasCachedSchema) {
@@ -76,7 +78,7 @@ class EnhancedSchemaManager {
         } catch (cacheError) {
           console.error('❌ [Schema] Cached schema fallback failed:', cacheError.message);
         }
-        
+
         // All fallbacks failed
         console.error('❌ [Schema] All schema initialization attempts failed');
         callback(err);
@@ -96,17 +98,19 @@ class EnhancedSchemaManager {
     try {
       if (fs.existsSync(this.schemaPath)) {
         const cachedData = JSON.parse(fs.readFileSync(this.schemaPath, 'utf8'));
-        
+
         // Check if cached schema is not too old (e.g., less than 30 days)
         const stats = fs.statSync(this.schemaPath);
         const ageInDays = (Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24);
-        
+
         if (ageInDays < 30) {
           console.log(`💡 [Schema] Using cached schema (${ageInDays.toFixed(1)} days old)`);
           this.originalManager.setSchema(cachedData);
           return true;
         } else {
-          console.warn(`⚠️ [Schema] Cached schema is ${ageInDays.toFixed(1)} days old, but using anyway`);
+          console.warn(
+            `⚠️ [Schema] Cached schema is ${ageInDays.toFixed(1)} days old, but using anyway`
+          );
           this.originalManager.setSchema(cachedData);
           return true;
         }
@@ -122,12 +126,13 @@ class EnhancedSchemaManager {
 
   /**
    * Checks if error indicates the API has been retired
+   * @param error
    */
   isRetiredError(error) {
     const errorMessage = error.message?.toLowerCase() || '';
     const errorResponse = error.response?.data?.toLowerCase() || '';
     const errorString = error.toString().toLowerCase();
-    
+
     return (
       errorMessage.includes('retired') ||
       errorMessage.includes('not found') ||
@@ -149,7 +154,7 @@ class EnhancedSchemaManager {
       lastSuccessfulFetch: this.lastSuccessfulFetch,
       hasSchema: !!this.originalManager.schema,
       cachedSchemaExists: fs.existsSync(this.schemaPath),
-      cachedSchemaAge: this.getCachedSchemaAge()
+      cachedSchemaAge: this.getCachedSchemaAge(),
     };
   }
 
@@ -177,6 +182,7 @@ class EnhancedSchemaManager {
 
   /**
    * Proxy method for events
+   * @param {...any} args
    */
   on(...args) {
     return this.originalManager.on(...args);
@@ -192,6 +198,7 @@ class EnhancedSchemaManager {
 
   /**
    * Proxy method for setSchema
+   * @param {...any} args
    */
   setSchema(...args) {
     return this.originalManager.setSchema(...args);

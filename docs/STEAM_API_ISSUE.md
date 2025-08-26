@@ -8,6 +8,7 @@ Steam's `GetSchemaItems` API endpoint (`https://api.steampowered.com/IEconItems_
 - **Sometimes**: Returns error "Method 'GetSchemaItems' has been retired in interface 'IEconItems_440'"
 
 This appears to be either:
+
 1. A gradual rollout/retirement process by Steam
 2. Load balancing where some servers still have the old endpoint
 3. A temporary API issue
@@ -15,6 +16,7 @@ This appears to be either:
 ## Impact
 
 The `@tf2autobot/tf2-schema` package (v4.3.0) used by this application relies on this endpoint, causing:
+
 - 403 HTTP errors in console output
 - Potential application crashes if no cached schema is available
 - Inconsistent behavior depending on which Steam server responds
@@ -26,23 +28,27 @@ The `@tf2autobot/tf2-schema` package (v4.3.0) used by this application relies on
 A wrapper around the original schema manager that provides:
 
 #### 1. **Retry Logic with Exponential Backoff**
+
 - 3 retry attempts with increasing delays (2s, 3s, 4.5s)
 - Intelligent error detection for "retired" API responses
 
 #### 2. **Multiple Fallback Strategies**
+
 - **Alternative Endpoints**: Tries different Steam API endpoints
   - `GetSchema/v0001`
-  - `GetSchemaItems/v0002` 
+  - `GetSchemaItems/v0002`
   - `IEconSchema_440/GetItems/v0001`
 - **Cached Schema**: Falls back to locally cached schema file
 - **Age Validation**: Warns if cached schema is older than 7 days
 
 #### 3. **Health Monitoring**
+
 - Tracks API retirement status
 - Records last successful fetch timestamps
 - Monitors cached schema age and availability
 
 #### 4. **API Endpoints for Monitoring**
+
 - `GET /schema-status/health` - Current schema health status
 - `GET /schema-status/info` - Basic schema information
 - `POST /schema-status/refresh` - Force schema refresh
@@ -50,7 +56,9 @@ A wrapper around the original schema manager that provides:
 ## API Endpoints
 
 ### GET `/schema-status/health`
+
 Returns comprehensive health information:
+
 ```json
 {
   "success": true,
@@ -74,7 +82,9 @@ Returns comprehensive health information:
 ```
 
 ### GET `/schema-status/info`
+
 Returns basic schema information:
+
 ```json
 {
   "success": true,
@@ -88,7 +98,9 @@ Returns basic schema information:
 ```
 
 ### POST `/schema-status/refresh`
+
 Forces a schema refresh:
+
 ```json
 {
   "success": true,
@@ -100,11 +112,13 @@ Forces a schema refresh:
 ## Error Handling
 
 ### Automatic Fallbacks
+
 1. **Steam API fails** → Try alternative endpoints
 2. **All endpoints fail** → Use cached schema
 3. **No cache available** → Log error but continue if possible
 
 ### Monitoring & Alerts
+
 - Console logging with clear status indicators (✅❌⚠️)
 - Health status tracking for API monitoring
 - Recommendations for manual intervention when needed
@@ -127,11 +141,13 @@ const schemaManager = new EnhancedSchemaManager(originalManager, config);
 To test the updated application with enhanced Steam API handling:
 
 1. **Start the application**:
+
    ```bash
    npm start
    ```
 
 2. **Check schema status**:
+
    ```bash
    # In browser or curl
    http://localhost:3456/schema-status/health
