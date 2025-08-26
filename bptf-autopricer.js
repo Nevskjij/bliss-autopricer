@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const pLimit = require('p-limit').default; // For limiting concurrent operations
 const Schema = require('@tf2autobot/tf2-schema');
+const EnhancedSchemaManager = require('./modules/steamSchemaManager');
 const methods = require('./methods');
 const Methods = new methods();
 const { validateConfig } = require('./modules/configValidation');
@@ -14,7 +15,7 @@ const SCHEMA_PATH = './schema.json';
 // Paths to the pricelist and item list files.
 const PRICELIST_PATH = './files/pricelist.json';
 const ITEM_LIST_PATH = './files/item_list.json';
-const { listen, socketIO } = require('./API/server.js');
+const { listen, socketIO, setSchemaManager } = require('./API/server.js');
 const { setWebSocketStatsProvider } = require('./API/routes/websocket-status.js');
 const { startPriceWatcher } = require('./modules/index');
 const scheduleTasks = require('./modules/scheduler');
@@ -57,9 +58,15 @@ process.on('uncaughtException', (err) => {
 });
 
 // Steam API key is required for the schema manager to work.
-const schemaManager = new Schema({
+const originalSchemaManager = new Schema({
   apiKey: config.steamAPIKey,
 });
+
+// Enhanced schema manager with retry logic and fallbacks
+const schemaManager = new EnhancedSchemaManager(originalSchemaManager, config);
+
+// Connect schema manager to API for monitoring
+setSchemaManager(schemaManager);
 
 // Steam IDs of bots that we want to ignore listings from.
 const excludedSteamIds = config.excludedSteamIDs;
@@ -462,7 +469,8 @@ const calculateAndEmitPrices = async () => {
 // When the schema manager is ready we proceed.
 schemaManager.init(async function (err) {
   if (err) {
-    throw err;
+    console.error('❌ [Schema] All schema initialization attempts failed:', err.message);
+    process.exit(1);
   }
 
   // Start watching pricelist.json for “old” entries

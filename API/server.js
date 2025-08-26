@@ -17,9 +17,11 @@ const config = require('../config.json');
 // API routes.
 const items_endpoint = require('./routes/api/items.js');
 const { router: websocketStatus } = require('./routes/websocket-status.js');
+const { router: schemaStatus, setSchemaManager } = require('./routes/schema-status.js');
 
 app.use('/items', items_endpoint);
 app.use('/websocket-status', websocketStatus);
+app.use('/schema-status', schemaStatus);
 
 const port = config.pricerPort || 3456;
 
@@ -40,4 +42,5 @@ const listen = () => {
 module.exports = {
   listen: listen,
   socketIO: io,
+  setSchemaManager: setSchemaManager,
 };
