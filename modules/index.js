@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const ConfigManager = require('./configManager');
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true })); // Changed to true to support array fields
 
 const CONFIG_PATH = path.resolve(__dirname, '../pricerConfig.json');
 const configManager = new ConfigManager(CONFIG_PATH);
@@ -43,6 +43,10 @@ function mountRoutes() {
 
   // Add bot management routes
   require('./routes/bot-config')(app, configManager);
+
+  // Add new dashboard and settings routes
+  require('./routes/dashboard')(app);
+  require('./routes/settings')(app);
 }
 
 function startPriceWatcher() {

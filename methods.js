@@ -468,7 +468,7 @@ Methods.prototype.getKeyPriceFromPricesTF = async function () {
     }
 
     throw new Error(
-      'Failed to get key price from Prices.TF. It is either down or we are being rate-limited.'
+      'Failed to get key price from Baseline. It is either down or we are being rate-limited.'
     );
   } catch (error) {
     throw error;

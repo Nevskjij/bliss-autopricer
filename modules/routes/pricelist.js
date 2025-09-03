@@ -41,29 +41,30 @@ module.exports = function (app, config, configManager) {
   function buildTable(items, showAge, sell) {
     items.sort((a, b) => a.name.localeCompare(b.name));
 
-    let tbl = '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">';
-    tbl += '<thead style="background: #f8f9fa;">';
+    let tbl =
+      '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    tbl += '<thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">';
     tbl += '<tr>';
     tbl +=
-      '<th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-weight: bold;">Item Name</th>';
+      '<th style="padding: 15px 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">Item Name</th>';
     tbl +=
-      '<th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-weight: bold;">SKU</th>';
+      '<th style="padding: 15px 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">SKU</th>';
     tbl +=
-      '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">Last Updated</th>';
+      '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">Last Updated</th>';
 
     if (showAge) {
       tbl +=
-        '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">Age (hours)</th>';
+        '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">Age (hours)</th>';
     }
 
     tbl +=
-      '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold; color: #28a745;">Buy Price</th>';
+      '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #28a745;">Buy Price</th>';
     tbl +=
-      '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold; color: #dc3545;">Sell Price</th>';
+      '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #dc3545;">Sell Price</th>';
     tbl +=
-      '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">In Bot</th>';
+      '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">In Bot</th>';
     tbl +=
-      '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">Actions</th>';
+      '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">Actions</th>';
     tbl += '</tr>';
     tbl += '</thead>';
     tbl += '<tbody>';
@@ -84,19 +85,33 @@ module.exports = function (app, config, configManager) {
       let rowStyle = '';
 
       if (showAge) {
+        // Age-based styling for outdated items
         if (item.age > 2 * 24 * 3600) {
           rowClass = 'outdated-2d';
-          rowStyle = 'background-color: #f8d7da;'; // Light red
+          rowStyle = 'background-color: #f8d7da; border-left: 4px solid #dc3545;'; // Light red with red border
         } else if (item.age > 24 * 3600) {
           rowClass = 'outdated-1d';
-          rowStyle = 'background-color: #fff3cd;'; // Light yellow
+          rowStyle = 'background-color: #fff3cd; border-left: 4px solid #ffc107;'; // Light yellow with yellow border
         } else {
           rowClass = 'outdated-2h';
-          rowStyle = 'background-color: #f4cccc;'; // Very light red
+          rowStyle = 'background-color: #ffe6e6; border-left: 4px solid #fd7e14;'; // Very light red with orange border
         }
       } else {
+        // Current items - all get light green theme since they have fresh prices
         rowClass = 'current-row';
-        rowStyle = index % 2 === 0 ? 'background-color: #f9f9f9;' : '';
+        let baseColor, borderColor;
+
+        if (item.inSelling) {
+          // Items in bot - darker green backgrounds
+          baseColor = index % 2 === 0 ? '#c3e6cb' : '#b8dacc';
+          borderColor = '#28a745';
+        } else {
+          // Items not in bot - lighter green backgrounds
+          baseColor = index % 2 === 0 ? '#d4edda' : '#c8e6c9';
+          borderColor = '#495057';
+        }
+
+        rowStyle = `background-color: ${baseColor}; border-left: 4px solid ${borderColor};`;
       }
 
       const actionControls = `
@@ -157,19 +172,21 @@ module.exports = function (app, config, configManager) {
     }
 
     names.sort();
-    let tbl = '<table style="width: 100%; border-collapse: collapse;">';
-    tbl += '<thead style="background: #f8f9fa;">';
+    let tbl =
+      '<table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    tbl += '<thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">';
     tbl += '<tr>';
     tbl +=
-      '<th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-weight: bold;">Item Name</th>';
+      '<th style="padding: 15px 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">Item Name</th>';
     tbl +=
-      '<th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">Action</th>';
+      '<th style="padding: 15px 12px; text-align: center; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 14px; color: #495057;">Action</th>';
     tbl += '</tr>';
     tbl += '</thead>';
     tbl += '<tbody>';
 
     names.forEach((name, index) => {
-      const rowStyle = index % 2 === 0 ? 'background-color: #f9f9f9;' : '';
+      const baseColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+      const rowStyle = `background-color: ${baseColor}; border-left: 4px solid #17a2b8;`;
       tbl += `<tr data-age="0" data-inbot="false" style="${rowStyle}">`;
       tbl += `<td class="name" style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">${name}</td>`;
       tbl += `<td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">`;
@@ -392,6 +409,59 @@ module.exports = function (app, config, configManager) {
 
       // Enhanced JavaScript
       html += `
+        <style>
+          /* Enhanced table styling */
+          table tbody tr {
+            transition: all 0.2s ease;
+          }
+          
+          table tbody tr:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          
+          .outdated-2d:hover {
+            background-color: #f5c6cb !important;
+          }
+          
+          .outdated-1d:hover {
+            background-color: #ffeaa7 !important;
+          }
+          
+          .outdated-2h:hover {
+            background-color: #ffcccc !important;
+          }
+          
+          .current-row:hover {
+            background-color: #e8f4fd !important;
+          }
+          
+          /* Special hover for items in bot */
+          .current-row[data-inbot="true"]:hover {
+            background-color: #b8dacc !important;
+          }
+          
+          /* Action button improvements */
+          table button {
+            transition: all 0.2s ease;
+          }
+          
+          table button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          }
+          
+          /* Input field improvements */
+          table input[type="number"] {
+            transition: border-color 0.2s ease;
+          }
+          
+          table input[type="number"]:focus {
+            border-color: #007cba;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+          }
+        </style>
         <script>
           let queue = [];
 
