@@ -108,5 +108,6 @@
     "After Eight": 2960676,
     "Legacy Paint": 5801378
   },
-  "botOwnerSteamIDs": []
+  "botOwnerSteamIDs": [],
+  "testValue": "Hello World"
 }

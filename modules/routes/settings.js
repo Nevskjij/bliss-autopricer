@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const renderPage = require('../layout');
 const { loadJson, saveJson } = require('../utils');
+const { getBaseConfigManager } = require('../baseConfigManager');
 
 module.exports = function (app) {
   const router = express.Router();
@@ -10,10 +11,10 @@ module.exports = function (app) {
   router.get('/', (req, res) => {
     try {
       // Load current configuration
-      const configPath = path.resolve(__dirname, '../../config.json');
+      const baseConfig = getBaseConfigManager();
       let config = {};
       try {
-        config = loadJson(configPath);
+        config = baseConfig.getConfig();
       } catch (error) {
         console.log('Creating new config.json with defaults');
         config = {
@@ -319,14 +320,15 @@ module.exports = function (app) {
   // Update settings endpoint
   router.post('/update', (req, res) => {
     try {
-      const configPath = path.resolve(__dirname, '../../config.json');
+      const { getBaseConfigManager } = require('../baseConfigManager');
+      const baseConfig = getBaseConfigManager();
       const pricerConfigPath = path.resolve(__dirname, '../../pricerConfig.json');
 
       let config = {};
       let pricerConfig = {};
 
       try {
-        config = loadJson(configPath);
+        config = baseConfig.getConfig();
       } catch {
         console.log('Creating new config.json');
         config = {};
@@ -396,7 +398,7 @@ module.exports = function (app) {
       pricerConfig.pm2ProcessName = req.body.pm2_process_name || 'tf2autobot';
 
       // Save configurations
-      saveJson(configPath, config);
+      baseConfig.saveConfig(config);
       saveJson(pricerConfigPath, pricerConfig);
 
       // Redirect with success message

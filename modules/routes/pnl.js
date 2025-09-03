@@ -4,9 +4,11 @@ const fs = require('fs');
 const express = require('express');
 const { loadJson } = require('../utils');
 const renderPage = require('../layout');
+const { getBaseConfigManager } = require('../baseConfigManager');
 
 module.exports = function (app, config, configManager) {
   const router = express.Router();
+  const baseConfig = getBaseConfigManager();
 
   // Helper function to get current bot paths
   function getBotPaths() {
@@ -80,11 +82,10 @@ module.exports = function (app, config, configManager) {
 
       const history = Object.values(parsed.offerData || {}).filter((t) => t.isAccepted);
 
-      // Load main config.json to get bot owner Steam IDs for exclusion from P&L calculations
+      // Get bot owner Steam IDs from main config for exclusion from P&L calculations
       let mainConfig = {};
       try {
-        const mainConfigPath = path.resolve(__dirname, '../../config.json');
-        mainConfig = loadJson(mainConfigPath);
+        mainConfig = baseConfig.getConfig();
       } catch (error) {
         console.warn('Could not load main config.json for bot owner exclusion:', error.message);
       }

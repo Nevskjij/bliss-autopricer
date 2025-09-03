@@ -1,6 +1,7 @@
 const http = require('http');
 const express = require('express');
 const socketIO = require('socket.io');
+const { getBaseConfigManager } = require('../modules/baseConfigManager');
 
 const app = express();
 const server = http.createServer(app);
@@ -12,7 +13,7 @@ app.use(
   })
 );
 
-const config = require('../config.json');
+const config = getBaseConfigManager().getConfig();
 
 // API routes.
 const items_endpoint = require('./routes/api/items.js');

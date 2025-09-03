@@ -1,12 +1,13 @@
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const config = require('../config.json');
+const { getBaseConfigManager } = require('./baseConfigManager');
 
 const CACHE_PATH = path.resolve(__dirname, '../bptf-prices.json');
 
 // Fetch all prices from backpack.tf
 async function getBptfPrices(force = false) {
+  const config = getBaseConfigManager().getConfig();
   let cacheValid = false;
   if (fs.existsSync(CACHE_PATH)) {
     const stats = fs.statSync(CACHE_PATH);

@@ -9,10 +9,15 @@ const axios = require('axios');
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-const config = require('./config.json');
+const { getBaseConfigManager } = require('./modules/baseConfigManager');
 const CACHE_FILE_PATH = path.resolve(__dirname, 'cached-pricelist.json');
 
 const { getBptfItemPrice } = require('./modules/bptfPriceFetcher');
+
+// Helper function to get config
+function getConfig() {
+  return getBaseConfigManager().getConfig();
+}
 
 // Returns true if baseline is OK, false if too different
 Methods.prototype.calculateBptfBaselineDifference = function (
@@ -49,6 +54,7 @@ Methods.prototype.calculateBptfBaselineDifference = function (
   const buyDiff = Math.abs((ourBuy - bptfBuy) / bptfBuy);
   const sellDiff = Math.abs((ourSell - bptfSell) / bptfSell);
 
+  const config = getConfig();
   if (buyDiff > (config.maxPercentageDifferences?.buy ?? 0.1)) {
     return false;
   }
@@ -279,6 +285,7 @@ Methods.prototype.validatePrice = function (percentageDifferences) {
 
   // A greater percentage difference for buying, means that our pricer is buying for more than prices.tf.
   // A lesser percentage difference for selling, means that our pricer is selling for less than prices.tf.
+  const config = getConfig();
   if (percentageDifferences.buyDifference > config.maxPercentageDifferences.buy) {
     throw new Error('Autopricer is buying for too much.');
   } else if (percentageDifferences.sellDifference < config.maxPercentageDifferences.sell) {
@@ -398,6 +405,7 @@ Methods.prototype.getListingsFromSnapshots = async function (name) {
   try {
     // Endpoint is limited to 1 request per 60 seconds.
     await this.waitXSeconds(1);
+    const config = getConfig();
     const response = await axios.get('https://backpack.tf/api/classifieds/listings/snapshot', {
       params: {
         sku: name,
