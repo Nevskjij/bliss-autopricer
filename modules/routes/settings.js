@@ -200,11 +200,69 @@ module.exports = function (app) {
                  style="margin-right: 8px;">
           <span style="font-weight: bold;">Fallback to Prices.tf</span>
         </label>
-        <label style="display: flex; align-items: center;">
+        <label style="display: flex; align-items: center; margin-bottom: 15px;">
           <input type="checkbox" name="price_all_items" ${config.priceAllItems ? 'checked' : ''} 
                  style="margin-right: 8px;">
           <span style="font-weight: bold;">Price All Items</span>
         </label>
+        <label style="display: flex; align-items: center;">
+          <input type="checkbox" name="initial_seed_unpriced" ${config.initialSeedUnpriced ? 'checked' : ''} 
+                 style="margin-right: 8px;">
+          <span style="font-weight: bold;">Initial Seed Unpriced Items</span>
+        </label>
+      </div>`;
+      html += '</div>';
+      html += '</div>';
+
+      // Pricing Thresholds Section - NEW
+      html += '<div style="margin-bottom: 30px;">';
+      html +=
+        '<h3 style="color: #007cba; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">📊 Pricing Thresholds</h3>';
+
+      html +=
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">';
+      html += `<div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Ideal Buy Count:</label>
+        <input type="number" name="ideal_buy_count" value="${config.pricingThresholds?.idealBuyCount || 3}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="1" step="1">
+        <small style="color: #666;">Ideal number of buy listings for Tier 1 pricing</small>
+      </div>`;
+      html += `<div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Ideal Sell Count:</label>
+        <input type="number" name="ideal_sell_count" value="${config.pricingThresholds?.idealSellCount || 3}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="1" step="1">
+        <small style="color: #666;">Ideal number of sell listings for Tier 1 pricing</small>
+      </div>`;
+      html += `<div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Asymmetric Min Total:</label>
+        <input type="number" name="asymmetric_min_total" value="${config.pricingThresholds?.asymmetricMinTotal || 6}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="2" step="1">
+        <small style="color: #666;">Minimum total listings for asymmetric pricing</small>
+      </div>`;
+      html += `<div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Asymmetric Ratio:</label>
+        <input type="number" name="asymmetric_ratio" value="${config.pricingThresholds?.asymmetricRatio || 5}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="2" step="1">
+        <small style="color: #666;">Minimum count on one side for asymmetric pricing</small>
+      </div>`;
+      html += `<div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Minimum Viable Total:</label>
+        <input type="number" name="minimum_viable_total" value="${config.pricingThresholds?.minimumViableTotal || 2}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="1" step="1">
+        <small style="color: #666;">Absolute minimum listings needed for pricing</small>
+      </div>`;
+      html += `<div>
+        <label style="display: flex; align-items: center;">
+          <input type="checkbox" name="enable_synthetic_pricing" ${config.pricingThresholds?.enableSyntheticPricing ? 'checked' : ''} 
+                 style="margin-right: 8px;">
+          <span style="font-weight: bold;">Enable Synthetic Pricing</span>
+        </label>
+        <small style="color: #666;">Generate synthetic buy/sell prices when one side is missing</small>
       </div>`;
       html += '</div>';
       html += '</div>';
@@ -380,6 +438,18 @@ module.exports = function (app) {
       config.alwaysQuerySnapshotAPI = req.body.always_query_snapshot === 'on';
       config.fallbackOntoPricesTf = req.body.fallback_prices_tf === 'on';
       config.priceAllItems = req.body.price_all_items === 'on';
+      config.initialSeedUnpriced = req.body.initial_seed_unpriced === 'on';
+
+      // Update pricing thresholds
+      if (!config.pricingThresholds) {
+        config.pricingThresholds = {};
+      }
+      config.pricingThresholds.idealBuyCount = parseInt(req.body.ideal_buy_count) || 3;
+      config.pricingThresholds.idealSellCount = parseInt(req.body.ideal_sell_count) || 3;
+      config.pricingThresholds.asymmetricMinTotal = parseInt(req.body.asymmetric_min_total) || 6;
+      config.pricingThresholds.asymmetricRatio = parseInt(req.body.asymmetric_ratio) || 5;
+      config.pricingThresholds.minimumViableTotal = parseInt(req.body.minimum_viable_total) || 2;
+      config.pricingThresholds.enableSyntheticPricing = req.body.enable_synthetic_pricing === 'on';
 
       // Update bot owner Steam IDs
       let ownerIds = req.body.bot_owner_ids || [];

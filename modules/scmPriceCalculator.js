@@ -24,7 +24,7 @@ function toMarketHashName(nameOrSku, schema) {
 }
 
 /**
- * Gets a price object for an item using SCM prices.
+ * Gets a price object for an item using SCM prices with dynamic margins.
  * @param {object} opts
  * @param {string} opts.name - The item name (market hash name).
  * @param {string} [opts.sku] - The SKU (optional, for future use).
@@ -32,6 +32,7 @@ function toMarketHashName(nameOrSku, schema) {
  * @param {string} [opts.currency] - The currency code (default: 'USD').
  * @param {number} [opts.scmMarginBuy] - Optional buy margin (default: 0).
  * @param {number} [opts.scmMarginSell] - Optional sell margin (default: 0).
+ * @param {object} [opts.marketData] - Optional market data for dynamic margins.
  * @returns {Promise<{buy: {keys: number, metal: number}, sell: {keys: number, metal: number}}|null>}
  */
 async function getSCMPriceObject({
@@ -40,6 +41,7 @@ async function getSCMPriceObject({
   currency = 'USD',
   scmMarginBuy = 0,
   scmMarginSell = 0,
+  marketData = null,
 }) {
   const marketHashName = toMarketHashName(name);
   const [itemSCM, keySCM] = await Promise.all([
@@ -49,18 +51,81 @@ async function getSCMPriceObject({
   if (!itemSCM || !keySCM || keySCM === 0) {
     return null;
   }
+
   let priceInKeys = itemSCM / keySCM;
   let priceInMetal = priceInKeys * keyMetal;
+
+  // Apply dynamic margins if market data is available
+  let buyMargin = scmMarginBuy;
+  let sellMargin = scmMarginSell;
+
+  if (marketData) {
+    const dynamicMargins = calculateDynamicSCMMargins(marketData, priceInMetal);
+    buyMargin = Math.max(scmMarginBuy, dynamicMargins.buyMargin);
+    sellMargin = Math.max(scmMarginSell, dynamicMargins.sellMargin);
+  }
+
   // Apply margin
-  let buyMetal = priceInMetal * (1 - scmMarginBuy);
-  let sellMetal = priceInMetal * (1 + scmMarginSell);
+  let buyMetal = priceInMetal * (1 - buyMargin);
+  let sellMetal = priceInMetal * (1 + sellMargin);
+
   // Always round to nearest scrap using getRight
   buyMetal = methods.getRight(buyMetal);
   sellMetal = methods.getRight(sellMetal);
+
   return {
     buy: { keys: 0, metal: buyMetal },
     sell: { keys: 0, metal: sellMetal },
+    margins: { buy: buyMargin, sell: sellMargin },
+    scmData: { usdPrice: itemSCM, keyPrice: keySCM },
   };
+}
+
+/**
+ * Calculate dynamic SCM margins based on market conditions
+ * @param {object} marketData - Market data including liquidity, volatility
+ * @param {number} priceInMetal - Current price in refined metal
+ * @returns {object} - Dynamic buy and sell margins
+ */
+function calculateDynamicSCMMargins(marketData, priceInMetal) {
+  let buyMargin = 0.08; // Base 8% buy margin
+  let sellMargin = 0.12; // Base 12% sell margin
+
+  // Price-based adjustments
+  if (priceInMetal > 50) {
+    // High-value items need higher margins
+    buyMargin += 0.03;
+    sellMargin += 0.05;
+  } else if (priceInMetal < 5) {
+    // Low-value items can have tighter margins
+    buyMargin -= 0.02;
+    sellMargin -= 0.03;
+  }
+
+  // Liquidity adjustments
+  const totalListings = (marketData.buyCount || 0) + (marketData.sellCount || 0);
+  if (totalListings < 5) {
+    // Low liquidity - increase margins
+    buyMargin += 0.05;
+    sellMargin += 0.08;
+  } else if (totalListings > 20) {
+    // High liquidity - can be more aggressive
+    buyMargin -= 0.02;
+    sellMargin -= 0.03;
+  }
+
+  // Volatility adjustments
+  if (marketData.volatility && marketData.volatility > 0.3) {
+    // High volatility - increase margins for safety
+    buyMargin += 0.04;
+    sellMargin += 0.06;
+  }
+
+  // Ensure margins stay within reasonable bounds
+  buyMargin = Math.max(0.02, Math.min(buyMargin, 0.2)); // 2% - 20%
+  sellMargin = Math.max(0.05, Math.min(sellMargin, 0.3)); // 5% - 30%
+
+  return { buyMargin, sellMargin };
 }
 
 /**
@@ -146,7 +211,4 @@ function skuToMarketHashName(skuObj, schema) {
 module.exports = {
   getSCMPriceObject,
   toMarketHashName,
-  parseSku,
-  skuToMarketHashName,
-  getEffectName,
 };

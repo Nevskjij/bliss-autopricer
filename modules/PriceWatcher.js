@@ -65,4 +65,4 @@ if (require.main === module) {
   watchPrices(file);
 }
 
-module.exports = { checkOldPrices, watchPrices };
+module.exports = { watchPrices };

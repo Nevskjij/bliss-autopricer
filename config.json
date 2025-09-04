@@ -20,9 +20,73 @@
     "maxBuyIncrease": 0.1,
     "maxSellDecrease": 0.1
   },
+  "pricingThresholds": {
+    "idealBuyCount": 3,
+    "idealSellCount": 3,
+    "asymmetricMinTotal": 6,
+    "asymmetricRatio": 5,
+    "minimumViableTotal": 2,
+    "enableSyntheticPricing": true
+  },
+  "advancedPricing": {
+    "outlierThreshold": 2.5,
+    "minConfidenceLevel": 0.7,
+    "trendWeight": 0.3,
+    "seasonalAdjustment": true,
+    "volumeWeight": 0.2
+  },
+  "mlPrediction": {
+    "lookbackPeriod": 168,
+    "minTrainingData": 10,
+    "seasonalPeriods": [24, 168],
+    "anomalyThreshold": 2.5
+  },
+  "dynamicBounds": {
+    "defaultMargin": 0.15,
+    "volatilityWeight": 0.3,
+    "liquidityWeight": 0.2,
+    "trendWeight": 0.25,
+    "qualityMultipliers": {
+      "5": 1.5,
+      "14": 2.0,
+      "11": 1.2,
+      "1": 0.8,
+      "3": 0.9
+    }
+  },
+  "profitOptimizer": {
+    "baseMarginBuy": 0.12,
+    "baseMarginSell": 0.15,
+    "maxMarginBuy": 0.25,
+    "maxMarginSell": 0.35,
+    "minMarginBuy": 0.05,
+    "minMarginSell": 0.08,
+    "liquidityThreshold": 5,
+    "volatilityWeight": 0.3,
+    "competitionWeight": 0.4,
+    "trendWeight": 0.25,
+    "riskTolerance": 0.15
+  },
+  "arbitrageDetector": {
+    "minArbitrageProfit": 0.15,
+    "maxPriceThreshold": 100,
+    "scmFeeRate": 0.15,
+    "enableArbitrageMonitoring": true,
+    "scanInterval": 1800
+  },
+  "competitionAnalyzer": {
+    "competitorThreshold": 5,
+    "priceAggression": 0.5,
+    "trustBonus": 0.02,
+    "volumeWeight": 0.3,
+    "enableCompetitionMonitoring": true
+  },
+  "scmMarginBuy": 0.08,
+  "scmMarginSell": 0.12,
   "alwaysQuerySnapshotAPI": true,
   "fallbackOntoPricesTf": false,
   "priceAllItems": false,
+  "initialSeedUnpriced": true,
   "excludedSteamIDs": [
     "76561199384015307",
     "76561199495073910",

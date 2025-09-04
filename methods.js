@@ -113,6 +113,16 @@ Methods.prototype.toMetal = function (obj, keyPriceInMetal) {
   return this.getRight(metal);
 };
 
+// New helper method to convert metal back to keys+metal format
+Methods.prototype.fromMetal = function (totalMetal, keyPriceInMetal) {
+  const keys = Math.floor(totalMetal / keyPriceInMetal);
+  const metal = this.getRight(totalMetal - keys * keyPriceInMetal);
+  return {
+    keys: keys,
+    metal: metal,
+  };
+};
+
 Methods.prototype.calculatePercentageDifference = function (value1, value2) {
   if (value1 === 0) {
     return value2 === 0 ? 0 : 100; // Handle division by zero

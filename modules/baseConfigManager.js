@@ -354,6 +354,5 @@ function getBaseConfigManager(configPath = null) {
 }
 
 module.exports = {
-  BaseConfigManager,
   getBaseConfigManager,
 };
