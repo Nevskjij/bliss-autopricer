@@ -4,7 +4,6 @@ function scheduleTasks({
   cleanupOldKeyPrices,
   checkKeyPriceStability,
   updateMovingAverages,
-  monitorArbitrage,
   db,
   pgp,
 }) {
@@ -13,12 +12,6 @@ function scheduleTasks({
   setInterval(() => cleanupOldKeyPrices(db), 30 * 60 * 1000); // Every 30 minutes
   setInterval(checkKeyPriceStability, 30 * 60 * 1000); // Every 30 minutes
   setInterval(() => updateMovingAverages(db, pgp), 15 * 60 * 1000); // Every 15 minutes
-
-  // Enhanced monitoring tasks
-  if (monitorArbitrage) {
-    setInterval(monitorArbitrage, 30 * 60 * 1000); // Every 30 minutes
-    console.log('🔍 Arbitrage monitoring enabled - checking every 30 minutes');
-  }
 }
 
 module.exports = scheduleTasks;

@@ -117,15 +117,14 @@ class PriceDiscoveryEngine {
     const sellPrices = sellListings.map((l) => this.methods.toMetal(l.currencies, keyPrice));
 
     const buyEstimate =
-      buyPrices.length > 0 ? this.robustEstimators.calculateAdaptiveRobustMean(buyPrices) : null;
+      buyPrices.length > 0 ? this.robustEstimators.calculateRobustMean(buyPrices) : null;
     const sellEstimate =
-      sellPrices.length > 0 ? this.robustEstimators.calculateAdaptiveRobustMean(sellPrices) : null;
+      sellPrices.length > 0 ? this.robustEstimators.calculateRobustMean(sellPrices) : null;
 
     // Robust outlier detection
-    const buyOutliers =
-      buyPrices.length > 0 ? this.robustEstimators.detectRobustOutliers(buyPrices) : [];
+    const buyOutliers = buyPrices.length > 0 ? this.robustEstimators.detectOutliers(buyPrices) : [];
     const sellOutliers =
-      sellPrices.length > 0 ? this.robustEstimators.detectRobustOutliers(sellPrices) : [];
+      sellPrices.length > 0 ? this.robustEstimators.detectOutliers(sellPrices) : [];
 
     // Clean prices (removing outliers)
     const cleanBuyPrices = buyPrices.filter(
@@ -138,7 +137,7 @@ class PriceDiscoveryEngine {
     // Re-estimate with clean data
     const cleanBuyEstimate =
       cleanBuyPrices.length > 0
-        ? this.robustEstimators.calculateAdaptiveRobustMean(cleanBuyPrices)
+        ? this.robustEstimators.calculateRobustMean(cleanBuyPrices)
         : null;
     const cleanSellEstimate =
       cleanSellPrices.length > 0

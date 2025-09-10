@@ -40,7 +40,6 @@ const PriceValidator = require('./modules/priceValidator');
 const PriceDiscoveryEngine = require('./modules/priceDiscoveryEngine');
 const RobustEstimators = require('./modules/robustEstimators');
 const ProfitOptimizer = require('./modules/profitOptimizer');
-const ArbitrageDetector = require('./modules/arbitrageDetector');
 const CompetitionAnalyzer = require('./modules/competitionAnalyzer');
 
 const {
@@ -95,7 +94,7 @@ const updatedSkus = new Set();
 
 // Initialize advanced pricing modules
 let advancedPricing, mlPredictor, dynamicBounds, priceValidator, priceDiscoveryEngine;
-let profitOptimizer, arbitrageDetector, competitionAnalyzer;
+let profitOptimizer, competitionAnalyzer;
 
 // Create database instance for pg-promise.
 const { db, pgp } = require('./modules/dbInstance');
@@ -169,7 +168,6 @@ const updateKeyObject = async () => {
 
     // Initialize profit optimization modules
     profitOptimizer = new ProfitOptimizer(config.profitOptimizer || {});
-    arbitrageDetector = new ArbitrageDetector(config.arbitrageDetector || {});
     competitionAnalyzer = new CompetitionAnalyzer(config.competitionAnalyzer || {});
 
     console.log('Advanced pricing and profit optimization modules initialized');
@@ -538,40 +536,6 @@ schemaManager.init(async function (err) {
     updateMovingAverages: async (db, pgp) => {
       await updateMovingAverages(db, pgp);
     },
-    // Enhanced profit monitoring
-    monitorArbitrage: async () => {
-      if (arbitrageDetector && config.arbitrageDetector?.enableArbitrageMonitoring) {
-        try {
-          const pricelist = JSON.parse(fs.readFileSync(PRICELIST_PATH, 'utf8'));
-          const items = pricelist.items
-            .filter((item) => item.sku !== '5021;6') // Exclude keys
-            .slice(0, 50) // Monitor top 50 items
-            .map((item) => ({
-              sku: item.sku,
-              name: item.name,
-              bptfPrice: { buy: item.buy, sell: item.sell },
-            }));
-
-          const opportunities = await arbitrageDetector.scanForArbitrage(
-            items,
-            keyobj.metal,
-            schemaManager
-          );
-          const report = arbitrageDetector.generateArbitrageReport(opportunities);
-
-          if (report.summary.totalOpportunities > 0) {
-            console.log(
-              `🚀 Arbitrage opportunities found: ${report.summary.totalOpportunities} items, potential profit: ${report.summary.totalPotentialProfit} refined`
-            );
-
-            // Emit arbitrage data to connected clients
-            socketIO.emit('arbitrage-report', report);
-          }
-        } catch (error) {
-          console.warn('Arbitrage monitoring failed:', error.message);
-        }
-      }
-    },
     db,
     pgp,
   });
@@ -731,10 +695,8 @@ async function isPriceSwingAcceptable(prev, next, sku) {
     const buyPrices = history.map((p) => Number(p.buy_metal)).filter((p) => p > 0);
     const sellPrices = history.map((p) => Number(p.sell_metal)).filter((p) => p > 0);
 
-    avgBuy =
-      buyPrices.length > 0 ? robustEstimators.calculateAdaptiveRobustMean(buyPrices).value : 0;
-    avgSell =
-      sellPrices.length > 0 ? robustEstimators.calculateAdaptiveRobustMean(sellPrices).value : 0;
+    avgBuy = buyPrices.length > 0 ? robustEstimators.calculateRobustMean(buyPrices).value : 0;
+    avgSell = sellPrices.length > 0 ? robustEstimators.calculateRobustMean(sellPrices).value : 0;
   } else {
     // Fallback to arithmetic mean if robust estimators not available
     avgBuy = history.reduce((sum, p) => sum + Number(p.buy_metal), 0) / history.length;
@@ -1022,7 +984,7 @@ const filterOutliers = (listingsArray) => {
       );
 
       // Detect outliers using multiple robust methods
-      const outliers = robustEstimators.detectRobustOutliers(prices);
+      const outliers = robustEstimators.detectOutliers(prices);
       const outlierIndices = new Set(outliers.map((o) => o.index));
 
       // Filter out detected outliers
@@ -1036,7 +998,7 @@ const filterOutliers = (listingsArray) => {
       const filteredPrices = filteredListings.map((l) =>
         Methods.toMetal(l.currencies, keyobj.metal)
       );
-      const robustResult = robustEstimators.calculateAdaptiveRobustMean(filteredPrices);
+      const robustResult = robustEstimators.calculateRobustMean(filteredPrices);
 
       console.log(
         `Robust filtering: ${outliers.length} outliers removed, method: ${robustResult.method}, confidence: ${robustResult.confidence.toFixed(2)}`
@@ -1518,16 +1480,29 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
     } else if (buyFiltered.length > 3 && buyFiltered.length < 10) {
       // For keys (5021;6), we need to handle the averaging differently
       if (sku === '5021;6') {
-        // Convert each listing to pure metal first, then average
-        let totalMetal = 0;
-        for (let i = 0; i <= 2; i++) {
-          totalMetal += Methods.toMetal(buyFiltered[i].currencies, keyobj.metal);
+        // Convert each listing to pure metal first
+        const prices = [];
+        for (let i = 0; i <= Math.min(2, buyFiltered.length - 1); i++) {
+          prices.push(Methods.toMetal(buyFiltered[i].currencies, keyobj.metal));
         }
+        
+        // Use robust estimation if available and we have enough data
+        let avgPrice;
+        if (prices.length >= 3 && priceDiscoveryEngine && priceDiscoveryEngine.robustEstimators) {
+          const robustResult = priceDiscoveryEngine.robustEstimators.calculateRobustMean(prices);
+          avgPrice = robustResult.value;
+          console.log(
+            `DEBUG: Key buy price using robust mean (${robustResult.method}) - metal: ${avgPrice}`
+          );
+        } else {
+          avgPrice = prices.reduce((sum, p) => sum + p, 0) / prices.length;
+          console.log(`DEBUG: Key buy price (3-9 listings) - keys: 0, metal: ${avgPrice}`);
+        }
+        
         final_buyObj = {
           keys: 0,
-          metal: totalMetal / 3,
+          metal: avgPrice,
         };
-        console.log(`DEBUG: Key buy price (3-9 listings) - keys: 0, metal: ${totalMetal / 3}`);
       } else {
         // For other items, average keys and metal separately
         var totalValue = {
@@ -1555,7 +1530,7 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
       if (priceDiscoveryEngine && priceDiscoveryEngine.robustEstimators) {
         const robustEstimators = priceDiscoveryEngine.robustEstimators;
         const filteredPrices = buyFiltered.map((l) => Methods.toMetal(l.currencies, keyobj.metal));
-        const robustResult = robustEstimators.calculateAdaptiveRobustMean(filteredPrices);
+        const robustResult = robustEstimators.calculateRobustMean(filteredPrices);
 
         console.log(
           `Using robust estimation: method=${robustResult.method}, confidence=${robustResult.confidence.toFixed(2)}`

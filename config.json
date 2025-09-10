@@ -67,13 +67,6 @@
     "trendWeight": 0.25,
     "riskTolerance": 0.15
   },
-  "arbitrageDetector": {
-    "minArbitrageProfit": 0.15,
-    "maxPriceThreshold": 100,
-    "scmFeeRate": 0.15,
-    "enableArbitrageMonitoring": true,
-    "scanInterval": 1800
-  },
   "competitionAnalyzer": {
     "competitorThreshold": 5,
     "priceAggression": 0.5,
