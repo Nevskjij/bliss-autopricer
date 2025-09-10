@@ -157,6 +157,52 @@ class MLPricePrediction {
   }
 
   /**
+   * Calculate trimmed mean (removes outliers from both ends)
+   * @param {Array} values - Array of numerical values
+   * @param {number} trimPercent - Percentage to trim from each end (default 10%)
+   * @returns {number} - Trimmed mean value
+   */
+  calculateTrimmedMean(values, trimPercent = 0.1) {
+    if (!values || values.length === 0) {
+      return 0;
+    }
+
+    if (values.length === 1) {
+      return values[0];
+    }
+
+    // Convert to numbers and filter out invalid values
+    const numericValues = values
+      .map((v) => (typeof v === 'number' ? v : parseFloat(v)))
+      .filter((v) => !isNaN(v))
+      .sort((a, b) => a - b);
+
+    if (numericValues.length === 0) {
+      return 0;
+    }
+
+    if (numericValues.length <= 2) {
+      return numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length;
+    }
+
+    // Calculate how many values to trim from each end
+    const trimCount = Math.floor(numericValues.length * trimPercent);
+    const startIndex = trimCount;
+    const endIndex = numericValues.length - trimCount;
+
+    // Get the trimmed array
+    const trimmedValues = numericValues.slice(startIndex, endIndex);
+
+    if (trimmedValues.length === 0) {
+      // If we trimmed too much, fall back to simple mean
+      return numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length;
+    }
+
+    // Calculate mean of trimmed values
+    return trimmedValues.reduce((sum, val) => sum + val, 0) / trimmedValues.length;
+  }
+
+  /**
    * Seasonal decomposition for identifying patterns
    * @param {Array} priceHistory - Historical price data
    * @param {number} seasonalPeriod - Period for seasonal analysis
@@ -272,25 +318,47 @@ class MLPricePrediction {
     }
 
     // Calculate RSI with robust statistics
-    const avgGain = this.calculateTrimmedMean(gains.slice(-period));
-    const avgLoss = this.calculateTrimmedMean(losses.slice(-period));
+    const avgGain = gains.length > 0 ? this.calculateTrimmedMean(gains.slice(-period)) : 0;
+    const avgLoss = losses.length > 0 ? this.calculateTrimmedMean(losses.slice(-period)) : 0;
 
-    const rsi = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+    // Handle edge cases for RSI calculation
+    let rsi;
+    if (avgLoss === 0 && avgGain === 0) {
+      rsi = 50; // Neutral when no movement
+    } else if (avgLoss === 0) {
+      rsi = 100; // All gains, maximum RSI
+    } else {
+      rsi = 100 - 100 / (1 + avgGain / avgLoss);
+    }
+
+    // Ensure RSI is within valid range
+    rsi = Math.max(0, Math.min(100, rsi));
 
     // Calculate momentum
-    const momentum = prices[prices.length - 1] - prices[prices.length - 1 - period];
+    const momentum =
+      prices.length >= period + 1
+        ? prices[prices.length - 1] - prices[prices.length - 1 - period]
+        : 0;
 
     // Calculate rate of change
-    const roc =
-      ((prices[prices.length - 1] - prices[prices.length - 1 - period]) /
-        prices[prices.length - 1 - period]) *
-      100;
+    let roc = 0;
+    if (prices.length >= period + 1 && prices[prices.length - 1 - period] !== 0) {
+      roc =
+        ((prices[prices.length - 1] - prices[prices.length - 1 - period]) /
+          prices[prices.length - 1 - period]) *
+        100;
+    }
+
+    // Ensure all values are valid numbers
+    const validRsi = isNaN(rsi) ? 50 : rsi;
+    const validMomentum = isNaN(momentum) ? 0 : momentum;
+    const validRoc = isNaN(roc) ? 0 : roc;
 
     return {
-      rsi: Math.round(rsi * 100) / 100,
-      momentum: Math.round(momentum * 100) / 100,
-      roc: Math.round(roc * 100) / 100,
-      signal: rsi > 70 ? 'overbought' : rsi < 30 ? 'oversold' : 'neutral',
+      rsi: Math.round(validRsi * 100) / 100,
+      momentum: Math.round(validMomentum * 100) / 100,
+      roc: Math.round(validRoc * 100) / 100,
+      signal: validRsi > 70 ? 'overbought' : validRsi < 30 ? 'oversold' : 'neutral',
     };
   }
 

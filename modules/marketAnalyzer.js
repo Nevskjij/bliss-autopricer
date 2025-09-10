@@ -105,11 +105,27 @@ class MarketAnalyzer {
     let totalWeight = 0;
     const firstPrice = recentPrices[0].value;
 
+    // Validate first price
+    if (!firstPrice || firstPrice <= 0 || isNaN(firstPrice)) {
+      return { direction: 'neutral', strength: 0, confidence: 0 };
+    }
+
     for (let i = 1; i < recentPrices.length; i++) {
       const price = recentPrices[i].value;
+
+      // Validate current price
+      if (!price || price <= 0 || isNaN(price)) {
+        continue;
+      }
+
       const age = currentTime - recentPrices[i].timestamp;
       const weight = Math.exp(-age / (this.config.recentTimeWindow / 3)); // Exponential decay
       const priceChange = (price - firstPrice) / firstPrice;
+
+      // Validate calculated values
+      if (isNaN(priceChange) || isNaN(weight)) {
+        continue;
+      }
 
       weightedPriceChange += priceChange * weight;
       totalWeight += weight;
@@ -118,18 +134,22 @@ class MarketAnalyzer {
     const momentum = totalWeight > 0 ? weightedPriceChange / totalWeight : 0;
     const strength = Math.abs(momentum);
 
+    // Ensure momentum and strength are valid numbers
+    const validMomentum = isNaN(momentum) ? 0 : momentum;
+    const validStrength = isNaN(strength) ? 0 : strength;
+
     let direction = 'neutral';
-    if (momentum > this.config.momentumThreshold) {
+    if (validMomentum > this.config.momentumThreshold) {
       direction = 'upward';
-    } else if (momentum < -this.config.momentumThreshold) {
+    } else if (validMomentum < -this.config.momentumThreshold) {
       direction = 'downward';
     }
 
     return {
       direction,
-      strength,
+      strength: validStrength,
       confidence: Math.min(1, recentPrices.length / 5), // Confidence based on data points
-      rawMomentum: momentum,
+      rawMomentum: validMomentum,
     };
   }
 

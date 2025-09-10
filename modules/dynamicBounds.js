@@ -40,7 +40,7 @@ class DynamicBounds {
     const robustEstimators = require('./robustEstimators');
     const estimator = new robustEstimators();
 
-    const robustMean = estimator.calculateAdaptiveRobustMean(recentPrices);
+    const robustMean = estimator.calculateRobustMean(recentPrices);
     const mad = estimator.calculateMAD(recentPrices);
 
     // Convert MAD to approximately standard deviation equivalent
@@ -169,12 +169,12 @@ class DynamicBounds {
     if (!sku || typeof sku !== 'string') {
       return 1.0; // Default multiplier if SKU is invalid
     }
-    
+
     const skuParts = sku.split(';');
     if (skuParts.length < 2) {
       return 1.0; // Default multiplier if SKU format is invalid
     }
-    
+
     const quality = skuParts[1];
     return this.config.qualityMultipliers[quality] || 1.0;
   }

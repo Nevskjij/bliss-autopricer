@@ -1158,7 +1158,7 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           { sku, name }
         );
 
-        if (discoveryResult.consensus && discoveryResult.confidence >= 0.6) {
+        if (discoveryResult.consensus && discoveryResult.confidence >= 0.3) {
           console.log(
             `Price discovery successful - Method consensus: ${discoveryResult.consensus.methodsUsed} methods, Confidence: ${discoveryResult.confidence.toFixed(2)}`
           );
@@ -1436,29 +1436,23 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           let sellPrice = null;
 
           if (buyFiltered.length >= 3) {
-            // Calculate strong buy side
-            const buyVWAP = advancedPricing.calculateVWAP(
-              buyFiltered
-                .filter((listing) => listing && listing.currencies)
-                .map((listing) => ({
-                  price: Methods.toMetal(listing.currencies, keyobj.metal),
-                  volume: 1, // Proxy volume
-                }))
-            );
-            buyPrice = buyVWAP;
+            // Calculate strong buy side - use the listings directly
+            const validBuyListings = buyFiltered.filter((listing) => listing && listing.currencies);
+            if (validBuyListings.length > 0) {
+              const buyVWAP = advancedPricing.calculateVWAP(validBuyListings, keyobj.metal);
+              buyPrice = buyVWAP;
+            }
           }
 
           if (sellFiltered.length >= 3) {
-            // Calculate strong sell side
-            const sellVWAP = advancedPricing.calculateVWAP(
-              sellFiltered
-                .filter((listing) => listing && listing.currencies)
-                .map((listing) => ({
-                  price: Methods.toMetal(listing.currencies, keyobj.metal),
-                  volume: 1, // Proxy volume
-                }))
+            // Calculate strong sell side - use the listings directly
+            const validSellListings = sellFiltered.filter(
+              (listing) => listing && listing.currencies
             );
-            sellPrice = sellVWAP;
+            if (validSellListings.length > 0) {
+              const sellVWAP = advancedPricing.calculateVWAP(validSellListings, keyobj.metal);
+              sellPrice = sellVWAP;
+            }
           }
 
           // Generate missing side using synthetic pricing
@@ -1572,15 +1566,25 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
 
         if (buyFiltered.length > 0) {
           // Calculate average of available buy listings
-          const totalMetal = buyFiltered
+          const validBuyListings = buyFiltered
             .slice(0, Math.min(3, buyFiltered.length))
-            .reduce((sum, listing) => sum + Methods.toMetal(listing.currencies, keyobj.metal), 0);
-          buyPrice = totalMetal / Math.min(3, buyFiltered.length);
+            .filter((listing) => listing && listing.currencies);
+
+          if (validBuyListings.length > 0) {
+            const totalMetal = validBuyListings.reduce(
+              (sum, listing) => sum + Methods.toMetal(listing.currencies, keyobj.metal),
+              0
+            );
+            buyPrice = totalMetal / validBuyListings.length;
+          }
         }
 
         if (sellFiltered.length > 0) {
-          // Use lowest sell price
-          sellPrice = Methods.toMetal(sellFiltered[0].currencies, keyobj.metal);
+          // Use lowest sell price with valid currencies
+          const validSellListing = sellFiltered.find((listing) => listing && listing.currencies);
+          if (validSellListing) {
+            sellPrice = Methods.toMetal(validSellListing.currencies, keyobj.metal);
+          }
         }
 
         // Generate missing prices
