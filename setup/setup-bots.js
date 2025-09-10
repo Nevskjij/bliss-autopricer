@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const ConfigManager = require('./modules/configManager');
+const ConfigManager = require('../modules/configManager');
 
 console.log('🤖 BPTF Autopricer Bot Configuration Setup');
 console.log('==========================================');
 
-const CONFIG_PATH = path.resolve(__dirname, 'pricerConfig.json');
+const CONFIG_PATH = path.resolve(__dirname, '..', 'config', 'pricerConfig.json');
 const configManager = new ConfigManager(CONFIG_PATH);
 
 async function runSetup() {

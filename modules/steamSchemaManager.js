@@ -10,7 +10,7 @@ class EnhancedSchemaManager {
   constructor(originalSchemaManager, config) {
     this.originalManager = originalSchemaManager;
     this.config = config;
-    this.schemaPath = path.resolve(__dirname, '../schema.json');
+    this.schemaPath = path.resolve(__dirname, '../data/schema.json');
     this.lastSuccessfulFetch = null;
     this.isRetiring = false;
     this.initAttempted = false;

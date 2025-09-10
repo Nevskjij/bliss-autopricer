@@ -1,4 +1,4 @@
-const Methods = require('../methods');
+const Methods = require('../lib/methods');
 const RobustEstimators = require('./robustEstimators');
 const OrderBookAnalyzer = require('./orderBookAnalyzer');
 
@@ -136,9 +136,7 @@ class PriceDiscoveryEngine {
 
     // Re-estimate with clean data
     const cleanBuyEstimate =
-      cleanBuyPrices.length > 0
-        ? this.robustEstimators.calculateRobustMean(cleanBuyPrices)
-        : null;
+      cleanBuyPrices.length > 0 ? this.robustEstimators.calculateRobustMean(cleanBuyPrices) : null;
     const cleanSellEstimate =
       cleanSellPrices.length > 0
         ? this.robustEstimators.calculateAdaptiveRobustMean(cleanSellPrices)

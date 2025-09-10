@@ -1,4 +1,4 @@
-const Methods = require('../methods');
+const Methods = require('../lib/methods');
 
 /**
  * Order Book Analyzer - Advanced market microstructure analysis

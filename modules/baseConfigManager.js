@@ -9,7 +9,7 @@ const { loadJson, saveJson } = require('./utils');
  */
 class BaseConfigManager {
   constructor(configPath = null) {
-    this.configPath = configPath || path.resolve(__dirname, '../config.json');
+    this.configPath = configPath || path.resolve(__dirname, '../config/config.json');
     this._config = null;
     this._watchers = new Set();
   }

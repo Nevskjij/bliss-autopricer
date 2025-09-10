@@ -269,6 +269,12 @@ module.exports = function (app) {
       html += '<div style="font-weight: bold;">Price Bounds</div>';
       html += '</a>';
 
+      html +=
+        '<a href="/market-analysis" style="background: #8e44ad; color: white; padding: 15px; border-radius: 8px; text-decoration: none; text-align: center; transition: all 0.2s;">';
+      html += '<div style="font-size: 1.5em; margin-bottom: 5px;">📈</div>';
+      html += '<div style="font-weight: bold;">Market Analysis</div>';
+      html += '</a>';
+
       html += '</div>';
       html += '</div>';
 

@@ -55,17 +55,19 @@
     }
   },
   "profitOptimizer": {
-    "baseMarginBuy": 0.12,
-    "baseMarginSell": 0.15,
-    "maxMarginBuy": 0.25,
-    "maxMarginSell": 0.35,
-    "minMarginBuy": 0.05,
-    "minMarginSell": 0.08,
-    "liquidityThreshold": 5,
-    "volatilityWeight": 0.3,
-    "competitionWeight": 0.4,
-    "trendWeight": 0.25,
-    "riskTolerance": 0.15
+    "baseMarginBuy": 0.08,
+    "baseMarginSell": 0.1,
+    "maxMarginBuy": 0.15,
+    "maxMarginSell": 0.18,
+    "minMarginBuy": 0.03,
+    "minMarginSell": 0.05,
+    "profitTarget": 0.06
+  },
+  "marketAnalyzer": {
+    "momentumThreshold": 0.05,
+    "liquidityThreshold": 10,
+    "competitivePressureThreshold": 0.08,
+    "recentTimeWindow": 3600
   },
   "competitionAnalyzer": {
     "competitorThreshold": 5,

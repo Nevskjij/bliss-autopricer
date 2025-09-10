@@ -17,23 +17,36 @@ An advanced TF2 item pricing system that uses live backpack.tf listings and Stea
 
 ## 🚀 Quick Start
 
+**NEW: One-Command Setup with PostgreSQL Auto-Install!**
+
 ```bash
 # 1. Clone and install
 git clone https://github.com/OliverPerring/bliss-autopricer.git
 cd bliss-autopricer
 npm install
 
-# 2. Setup bot configuration (auto-discovers your bots)
+# 2. Run the automated setup (handles everything!)
 npm run setup
+```
 
-# 3. Initialize database
-npm run validate-config
+This will:
 
-# 4. Start the autopricer
+- ✅ **Check and install PostgreSQL** if needed (Windows/macOS/Linux)
+- ✅ **Create database and user** automatically
+- ✅ **Auto-discover your TF2Autobot installations**
+- ✅ **Configure multi-bot support** with web management
+- ✅ **Walk you through API key setup**
+- ✅ **Validate your configuration**
+
+Then simply start the autopricer:
+
+```bash
 npm start
 ```
 
 Visit the web interface at `http://localhost:3000` to manage your pricing!
+
+**No more manual PostgreSQL setup or complex configuration!**
 
 ## ✨ What's New in This Fork
 
@@ -171,22 +184,43 @@ The web dashboard provides:
 
 ## 📚 Documentation
 
-- **[Installation Guide](docs/INSTALLATION.md)**: Detailed setup instructions
-- **[Configuration Guide](docs/CONFIGURATION.md)**: Advanced configuration options
-- **[API Documentation](docs/API.md)**: REST API reference
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)**: Common issues and solutions
+**NEW: Completely rewritten documentation with step-by-step guides!**
+
+- **[Installation Guide](docs/INSTALLATION.md)**: One-command setup with PostgreSQL auto-install
+- **[Multi-Bot Setup](docs/MULTI-BOT.md)**: Updated guide for the new ConfigManager system
+- **[Configuration Guide](docs/CONFIGURATION.md)**: Comprehensive settings reference
+- **[API Documentation](docs/API.md)**: REST API and WebSocket reference
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)**: Solutions for common issues
+
+The documentation has been completely updated to reflect the new auto-setup system and multi-bot management features.
 
 ## 🔄 Updating Your Installation
 
-If you've already cloned the repository and want to update to the latest version:
+**NEW: Automated Update Script!**
+
+Keep your autopricer current with the new update system:
+
+```bash
+npm run update
+```
+
+This will:
+
+- ✅ **Check for new versions** automatically
+- ✅ **Create automatic backups** of your configuration
+- ✅ **Update dependencies** safely
+- ✅ **Run database migrations** if needed
+- ✅ **Validate configuration** after update
+
+For manual updates:
 
 ```bash
 cd bliss-autopricer
-git pull origin
+git pull origin main
 npm install
 ```
 
-Your configuration files (`pricerConfig.json`, `files/`) will be preserved during updates.
+Your configuration files (`config/pricerConfig.json`, `files/`) will be preserved during updates.
 
 ## 🤝 Contributing
 

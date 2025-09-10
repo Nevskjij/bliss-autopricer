@@ -3,7 +3,7 @@ const fs = require('fs');
 const axios = require('axios');
 const { getBaseConfigManager } = require('./baseConfigManager');
 
-const CACHE_PATH = path.resolve(__dirname, '../bptf-prices.json');
+const CACHE_PATH = path.resolve(__dirname, '../data/bptf-prices.json');
 
 // Fetch all prices from backpack.tf
 async function getBptfPrices(force = false) {

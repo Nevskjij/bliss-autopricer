@@ -1,4 +1,4 @@
-const Methods = require('../methods');
+const Methods = require('../lib/methods');
 
 /**
  * Simplified Robust Statistical Estimators for Profit-Focused Pricing
@@ -148,7 +148,7 @@ class RobustEstimators {
     // Calculate basic statistics
     const arithmeticMean = prices.reduce((a, b) => a + b, 0) / prices.length;
     const median = this.calculateMedian(prices);
-    
+
     // Detect data quality issues
     const outliers = this.detectOutliers(prices);
     const outlierRatio = outliers.length / prices.length;

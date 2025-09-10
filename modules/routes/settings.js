@@ -34,7 +34,7 @@ module.exports = function (app) {
       }
 
       // Load pricer config
-      const pricerConfigPath = path.resolve(__dirname, '../../pricerConfig.json');
+      const pricerConfigPath = path.resolve(__dirname, '../../config/pricerConfig.json');
       let pricerConfig = {};
       try {
         pricerConfig = loadJson(pricerConfigPath);
@@ -325,6 +325,120 @@ module.exports = function (app) {
       html += '</div>';
       html += '</div>';
 
+      // Market Analyzer Section - NEW
+      html += '<div style="margin-bottom: 30px;">';
+      html +=
+        '<h3 style="color: #007cba; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">📊 Market Analysis</h3>';
+      html +=
+        '<p style="color: #666; margin-bottom: 15px;">Real-time market condition detection for competitive pricing</p>';
+
+      html +=
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">';
+
+      html += `
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Momentum Threshold</label>
+        <input type="number" name="momentum_threshold" value="${config.marketAnalyzer?.momentumThreshold || 0.05}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Minimum price movement % to detect momentum (0.05 = 5%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Liquidity Threshold</label>
+        <input type="number" name="liquidity_threshold" value="${config.marketAnalyzer?.liquidityThreshold || 10}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="1" step="1">
+        <small style="color: #666;">Minimum total listings for liquid market detection</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Competitive Pressure Threshold</label>
+        <input type="number" name="competitive_pressure_threshold" value="${config.marketAnalyzer?.competitivePressureThreshold || 0.08}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Maximum spread % for high competitive pressure (0.08 = 8%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Recent Time Window (seconds)</label>
+        <input type="number" name="recent_time_window" value="${config.marketAnalyzer?.recentTimeWindow || 3600}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="300" step="300">
+        <small style="color: #666;">Time window for "recent" data analysis (3600 = 1 hour)</small>
+      </div>`;
+      html += '</div>';
+      html += '</div>';
+
+      // Profit Optimizer Section - NEW
+      html += '<div style="margin-bottom: 30px;">';
+      html +=
+        '<h3 style="color: #007cba; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">💰 Profit Optimization</h3>';
+      html +=
+        '<p style="color: #666; margin-bottom: 15px;">Dynamic margin calculation with market-aware profit optimization</p>';
+
+      html +=
+        '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 20px 0;">';
+
+      html += `
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Base Buy Margin</label>
+        <input type="number" name="base_margin_buy" value="${config.profitOptimizer?.baseMarginBuy || 0.08}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Default buy margin (0.08 = 8%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Base Sell Margin</label>
+        <input type="number" name="base_margin_sell" value="${config.profitOptimizer?.baseMarginSell || 0.1}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Default sell margin (0.10 = 10%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Profit Target</label>
+        <input type="number" name="profit_target" value="${config.profitOptimizer?.profitTarget || 0.06}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Target profit per trade (0.06 = 6%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Max Buy Margin</label>
+        <input type="number" name="max_margin_buy" value="${config.profitOptimizer?.maxMarginBuy || 0.15}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Maximum buy margin in thin markets (0.15 = 15%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Max Sell Margin</label>
+        <input type="number" name="max_margin_sell" value="${config.profitOptimizer?.maxMarginSell || 0.18}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Maximum sell margin in thin markets (0.18 = 18%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Min Buy Margin</label>
+        <input type="number" name="min_margin_buy" value="${config.profitOptimizer?.minMarginBuy || 0.03}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Minimum buy margin in competitive markets (0.03 = 3%)</small>
+      </div>
+
+      <div>
+        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Min Sell Margin</label>
+        <input type="number" name="min_margin_sell" value="${config.profitOptimizer?.minMarginSell || 0.05}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+               min="0" max="1" step="0.01">
+        <small style="color: #666;">Minimum sell margin in competitive markets (0.05 = 5%)</small>
+      </div>`;
+      html += '</div>';
+      html += '</div>';
+
       // Action Buttons
       html += '<div style="border-top: 1px solid #ddd; padding-top: 20px; text-align: right;">';
       html +=
@@ -380,7 +494,7 @@ module.exports = function (app) {
     try {
       const { getBaseConfigManager } = require('../baseConfigManager');
       const baseConfig = getBaseConfigManager();
-      const pricerConfigPath = path.resolve(__dirname, '../../pricerConfig.json');
+      const pricerConfigPath = path.resolve(__dirname, '../../config/pricerConfig.json');
 
       let config = {};
       let pricerConfig = {};
@@ -450,6 +564,28 @@ module.exports = function (app) {
       config.pricingThresholds.asymmetricRatio = parseInt(req.body.asymmetric_ratio) || 5;
       config.pricingThresholds.minimumViableTotal = parseInt(req.body.minimum_viable_total) || 2;
       config.pricingThresholds.enableSyntheticPricing = req.body.enable_synthetic_pricing === 'on';
+
+      // Update Market Analyzer settings
+      if (!config.marketAnalyzer) {
+        config.marketAnalyzer = {};
+      }
+      config.marketAnalyzer.momentumThreshold = parseFloat(req.body.momentum_threshold) || 0.05;
+      config.marketAnalyzer.liquidityThreshold = parseInt(req.body.liquidity_threshold) || 10;
+      config.marketAnalyzer.competitivePressureThreshold =
+        parseFloat(req.body.competitive_pressure_threshold) || 0.08;
+      config.marketAnalyzer.recentTimeWindow = parseInt(req.body.recent_time_window) || 3600;
+
+      // Update Profit Optimizer settings
+      if (!config.profitOptimizer) {
+        config.profitOptimizer = {};
+      }
+      config.profitOptimizer.baseMarginBuy = parseFloat(req.body.base_margin_buy) || 0.08;
+      config.profitOptimizer.baseMarginSell = parseFloat(req.body.base_margin_sell) || 0.1;
+      config.profitOptimizer.maxMarginBuy = parseFloat(req.body.max_margin_buy) || 0.15;
+      config.profitOptimizer.maxMarginSell = parseFloat(req.body.max_margin_sell) || 0.18;
+      config.profitOptimizer.minMarginBuy = parseFloat(req.body.min_margin_buy) || 0.03;
+      config.profitOptimizer.minMarginSell = parseFloat(req.body.min_margin_sell) || 0.05;
+      config.profitOptimizer.profitTarget = parseFloat(req.body.profit_target) || 0.06;
 
       // Update bot owner Steam IDs
       let ownerIds = req.body.bot_owner_ids || [];

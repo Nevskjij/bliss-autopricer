@@ -1,4 +1,4 @@
-const Methods = require('../methods');
+const Methods = require('../lib/methods');
 
 /**
  * Dynamic bounds calculation system
@@ -166,7 +166,16 @@ class DynamicBounds {
    * @returns {number} - Quality multiplier
    */
   getQualityMultiplier(sku) {
-    const quality = sku.split(';')[1];
+    if (!sku || typeof sku !== 'string') {
+      return 1.0; // Default multiplier if SKU is invalid
+    }
+    
+    const skuParts = sku.split(';');
+    if (skuParts.length < 2) {
+      return 1.0; // Default multiplier if SKU format is invalid
+    }
+    
+    const quality = skuParts[1];
     return this.config.qualityMultipliers[quality] || 1.0;
   }
 

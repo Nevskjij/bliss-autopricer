@@ -1,4 +1,4 @@
-const Methods = require('../methods');
+const Methods = require('../lib/methods');
 
 /**
  * Streamlined Advanced Pricing for Profit-Focused Trading
@@ -119,7 +119,7 @@ class AdvancedPricing {
    */
   generateSyntheticPrice(availablePrice, side, marketContext = {}) {
     const { spreadHint = 0.1, competition = 'normal' } = marketContext;
-    
+
     // Conservative approach for profit protection
     let adjustment;
     if (side === 'buy') {

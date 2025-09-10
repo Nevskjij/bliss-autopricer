@@ -66,7 +66,7 @@ class CompetitionAnalyzer {
     }
 
     // Convert to metal prices and sort
-    const Methods = require('../methods');
+    const Methods = require('../lib/methods');
     const methods = new Methods();
 
     const competitorPrices = buyListings
@@ -115,7 +115,7 @@ class CompetitionAnalyzer {
       return { competitorCount: 0, priceRange: null, recommendations: null };
     }
 
-    const Methods = require('../methods');
+    const Methods = require('../lib/methods');
     const methods = new Methods();
 
     const competitorPrices = sellListings

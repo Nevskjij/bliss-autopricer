@@ -6,7 +6,7 @@ const path = require('path');
 console.log('🔍 BPTF Autopricer Configuration Validator');
 console.log('==========================================\n');
 
-const configPath = path.resolve(__dirname, 'config.json');
+const configPath = path.resolve(__dirname, '..', 'config', 'config.json');
 
 // Check if config.json exists
 if (!fs.existsSync(configPath)) {
@@ -79,7 +79,7 @@ try {
 
     console.log('\n🚀 Next steps:');
     console.log('   1. Set up PostgreSQL database: see README.md');
-    console.log('   2. Run bot setup: npm run setup');
+    console.log('   2. Run bot setup: npm run setup-bots');
     console.log('   3. Start autopricer: npm start');
   } else {
     console.log('❌ Configuration has errors that need to be fixed:');
@@ -91,7 +91,7 @@ try {
     console.log('   3. Get API keys from:');
     console.log('      - Backpack.tf: https://backpack.tf/developer');
     console.log('      - Steam: https://steamcommunity.com/dev/apikey');
-    console.log('   4. Run this validator again: node validate-config.js');
+    console.log('   4. Run this validator again: npm run validate-config');
   }
 } catch (error) {
   console.log('❌ Error reading config.json:');

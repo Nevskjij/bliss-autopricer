@@ -7,7 +7,7 @@ const ConfigManager = require('./configManager');
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true })); // Changed to true to support array fields
 
-const CONFIG_PATH = path.resolve(__dirname, '../pricerConfig.json');
+const CONFIG_PATH = path.resolve(__dirname, '../config/pricerConfig.json');
 const configManager = new ConfigManager(CONFIG_PATH);
 
 // Get legacy config for backward compatibility with existing routes
@@ -47,6 +47,7 @@ function mountRoutes() {
   // Add new dashboard and settings routes
   require('./routes/dashboard')(app);
   require('./routes/settings')(app);
+  require('./routes/market-analysis')(app, configManager);
 }
 
 function startPriceWatcher() {

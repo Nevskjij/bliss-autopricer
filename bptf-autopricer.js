@@ -5,13 +5,13 @@ const path = require('path');
 const pLimit = require('p-limit').default; // For limiting concurrent operations
 const Schema = require('@tf2autobot/tf2-schema');
 const EnhancedSchemaManager = require('./modules/steamSchemaManager');
-const methods = require('./methods');
+const methods = require('./lib/methods');
 const Methods = new methods();
 const { validateConfig } = require('./modules/configValidation');
-const CONFIG_PATH = path.resolve(__dirname, 'config.json');
+const CONFIG_PATH = path.resolve(__dirname, 'config/config.json');
 const config = validateConfig(CONFIG_PATH);
 const PriceWatcher = require('./modules/PriceWatcher'); //outdated price logging
-const SCHEMA_PATH = './schema.json';
+const SCHEMA_PATH = './data/schema.json';
 // Paths to the pricelist and item list files.
 const PRICELIST_PATH = './files/pricelist.json';
 const ITEM_LIST_PATH = './files/item_list.json';
@@ -41,6 +41,7 @@ const PriceDiscoveryEngine = require('./modules/priceDiscoveryEngine');
 const RobustEstimators = require('./modules/robustEstimators');
 const ProfitOptimizer = require('./modules/profitOptimizer');
 const CompetitionAnalyzer = require('./modules/competitionAnalyzer');
+const MarketAnalyzer = require('./modules/marketAnalyzer');
 
 const {
   getListings,
@@ -93,8 +94,14 @@ const fallbackOntoPricesTf = config.fallbackOntoPricesTf;
 const updatedSkus = new Set();
 
 // Initialize advanced pricing modules
-let advancedPricing, mlPredictor, dynamicBounds, priceValidator, priceDiscoveryEngine;
-let profitOptimizer, competitionAnalyzer;
+let advancedPricing,
+  mlPredictor,
+  dynamicBounds,
+  priceValidator,
+  priceDiscoveryEngine,
+  marketAnalyzer,
+  profitOptimizer;
+let competitionAnalyzer;
 
 // Create database instance for pg-promise.
 const { db, pgp } = require('./modules/dbInstance');
@@ -396,6 +403,13 @@ const calculateAndEmitPrices = async () => {
       limit(async () => {
         try {
           let sku = schemaManager.schema.getSkuFromName(name);
+
+          // Skip items with undefined SKUs
+          if (!sku) {
+            console.warn(`Warning: Could not generate SKU for item "${name}", skipping pricing`);
+            return;
+          }
+
           let arr = await determinePrice(name, sku);
           let result = await finalisePrice(arr, name, sku);
 
@@ -1072,6 +1086,12 @@ const getAverages = async (name, buyFiltered, sellFiltered, sku, pricetfItem) =>
 };
 
 const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetfItem) => {
+  // Validate input parameters
+  if (!sku) {
+    console.warn(`Warning: SKU is undefined for item ${name}, falling back to basic pricing`);
+    return await getAverages(name, buyFiltered, sellFiltered, sku, pricetfItem);
+  }
+
   // Initialise two objects to contain the items final buy and sell prices.
   var final_buyObj = {
     keys: 0,
@@ -1083,19 +1103,49 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
   };
 
   try {
+    // Initialize market analyzer for competitive pricing
+    if (!marketAnalyzer) {
+      marketAnalyzer = new MarketAnalyzer(config.marketAnalyzer || {});
+      console.log('Market analyzer initialized for competitive pricing');
+    }
+
+    // Initialize profit optimizer for margin optimization
+    if (!profitOptimizer) {
+      profitOptimizer = new ProfitOptimizer(config.profitOptimizer || {});
+      console.log('Profit optimizer initialized for dynamic margins');
+    }
+
     // Get historical price data for advanced analysis
     const priceHistory = await db.any(
       `SELECT buy_metal as value, 'buy' as side, timestamp FROM price_history 
-       WHERE sku = $1 AND timestamp > $2
+       WHERE sku = $1 AND timestamp > to_timestamp($2)
        UNION ALL
        SELECT sell_metal as value, 'sell' as side, timestamp FROM price_history 
-       WHERE sku = $1 AND timestamp > $2
+       WHERE sku = $1 AND timestamp > to_timestamp($2)
        ORDER BY timestamp DESC LIMIT 100`,
       [sku, Math.floor(Date.now() / 1000) - 7 * 24 * 3600] // Last 7 days
     );
 
     // Try enhanced pricing first
     try {
+      // Analyze market conditions for competitive pricing strategy
+      let marketConditions = null;
+      if (marketAnalyzer && (buyFiltered.length > 0 || sellFiltered.length > 0)) {
+        marketConditions = marketAnalyzer.analyzeMarketConditions(
+          buyFiltered,
+          sellFiltered,
+          priceHistory,
+          keyobj.metal
+        );
+
+        console.log(
+          `Market analysis for ${name}: Regime=${marketConditions.regime}, ` +
+            `Liquidity=${marketConditions.liquidity.condition}, ` +
+            `Momentum=${marketConditions.momentum.direction} (${marketConditions.momentum.strength.toFixed(3)}), ` +
+            `Competition=${marketConditions.competitivePressure.pressure}`
+        );
+      }
+
       // Use advanced price discovery engine for comprehensive analysis
       if (priceDiscoveryEngine && (buyFiltered.length > 0 || sellFiltered.length > 0)) {
         console.log(`Using advanced price discovery for ${name} (${sku})`);
@@ -1132,11 +1182,62 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
               console.log(
                 `Price discovery validation passed - Grade: ${validation.confidence.grade}`
               );
+
+              // Apply market-aware adjustments if market analysis is available
+              if (marketConditions && marketConditions.recommendations) {
+                const recommendations = marketConditions.recommendations;
+                const originalBuy = discoveryResult.consensus.buyPrice;
+                const originalSell = discoveryResult.consensus.sellPrice;
+
+                // Get profit-optimized margins
+                let adjustedBuyPrice = originalBuy;
+                let adjustedSellPrice = originalSell;
+
+                if (profitOptimizer) {
+                  const basePrice = (originalBuy + originalSell) / 2;
+                  const optimizedPricing = profitOptimizer.optimizeMargins(
+                    marketConditions,
+                    basePrice,
+                    { sku, name }
+                  );
+
+                  adjustedBuyPrice = optimizedPricing.buyPrice;
+                  adjustedSellPrice = optimizedPricing.sellPrice;
+
+                  console.log(
+                    `Profit-optimized pricing: ${optimizedPricing.strategy}, ` +
+                      `Expected profit: ${optimizedPricing.expectedProfit.toFixed(3)} ref ` +
+                      `(${(optimizedPricing.profitMargin * 100).toFixed(1)}% ROI)`
+                  );
+                } else {
+                  // Fallback to simple market adjustments
+                  adjustedBuyPrice = originalBuy * recommendations.buyAdjustment;
+                  adjustedSellPrice = originalSell * recommendations.sellAdjustment;
+                }
+
+                final_buyObj = Methods.fromMetal(adjustedBuyPrice, keyobj.metal);
+                final_sellObj = Methods.fromMetal(adjustedSellPrice, keyobj.metal);
+
+                console.log(
+                  `Market-aware pricing applied: Strategy=${recommendations.strategy}, ` +
+                    `Buy: ${originalBuy.toFixed(3)} → ${adjustedBuyPrice.toFixed(3)} ` +
+                    `(${((adjustedBuyPrice / originalBuy - 1) * 100).toFixed(1)}%), ` +
+                    `Sell: ${originalSell.toFixed(3)} → ${adjustedSellPrice.toFixed(3)} ` +
+                    `(${((adjustedSellPrice / originalSell - 1) * 100).toFixed(1)}%)`
+                );
+              }
+
+              console.log(
+                `✅ Final prices for ${name}: BUY={keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}} | SELL={keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
+              );
               return [final_buyObj, final_sellObj];
             } else {
               console.log(`Price discovery validation failed - ${validation.issues.join(', ')}`);
             }
           } else {
+            console.log(
+              `✅ Final prices for ${name}: BUY={keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}} | SELL={keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
+            );
             return [final_buyObj, final_sellObj];
           }
         } else {
@@ -1178,41 +1279,48 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
         );
 
         // Apply profit optimization
-        if (profitOptimizer && estimationResult.buyPrice && estimationResult.sellPrice) {
-          const marketData = {
-            buyCount: buyFiltered.length,
-            sellCount: sellFiltered.length,
-            spread: estimationResult.sellPrice - estimationResult.buyPrice,
-          };
+        if (profitOptimizer && estimationResult.buyPrice && estimationResult.sellPrice && sku) {
+          // Validate SKU format before proceeding with profit optimization
+          const skuParts = sku.split(';');
+          if (skuParts.length < 2 || !skuParts[1]) {
+            console.warn(
+              `Warning: Invalid SKU format for profit optimization: ${sku}, skipping profit optimization`
+            );
+          } else {
+            const marketData = {
+              buyCount: buyFiltered.length,
+              sellCount: sellFiltered.length,
+              spread: estimationResult.sellPrice - estimationResult.buyPrice,
+            };
 
-          const itemMetadata = {
-            sku,
-            quality: sku.split(';')[1],
-            effect: sku.includes('u-') ? parseInt(sku.split('u-')[1]) : null,
-            killstreak: sku.includes('kt-') ? parseInt(sku.split('kt-')[1]) : null,
-            australium: sku.includes('australium'),
-            festive: sku.includes('festive'),
-          };
+            const itemMetadata = {
+              sku,
+              quality: skuParts[1],
+              effect: sku && sku.includes('u-') ? parseInt(sku.split('u-')[1]) : null,
+              killstreak: sku && sku.includes('kt-') ? parseInt(sku.split('kt-')[1]) : null,
+              australium: sku && sku.includes('australium'),
+              festive: sku && sku.includes('festive'),
+            };
 
-          const profitAnalysis = profitOptimizer.analyzeProfitPotential(
-            marketData,
-            priceHistory,
-            (estimationResult.buyPrice + estimationResult.sellPrice) / 2,
-            itemMetadata
-          );
-
-          if (profitAnalysis && profitAnalysis.margins.confidence > 0.6) {
-            const optimizedPrices = profitOptimizer.applyOptimizedMargins(
-              (estimationResult.buyPrice + estimationResult.sellPrice) / 2,
-              profitAnalysis.margins
+            const profitAnalysis = profitOptimizer.calculateOptimalMargins(
+              marketData,
+              priceHistory,
+              itemMetadata
             );
 
-            estimationResult.buyPrice = optimizedPrices.buy;
-            estimationResult.sellPrice = optimizedPrices.sell;
+            if (profitAnalysis && profitAnalysis.margins.confidence > 0.6) {
+              const optimizedPrices = profitOptimizer.applyOptimizedMargins(
+                (estimationResult.buyPrice + estimationResult.sellPrice) / 2,
+                profitAnalysis.margins
+              );
 
-            console.log(
-              `Profit optimization applied - Potential daily profit: ${profitAnalysis.profit.estimatedDaily.toFixed(2)} refined`
-            );
+              estimationResult.buyPrice = optimizedPrices.buy;
+              estimationResult.sellPrice = optimizedPrices.sell;
+
+              console.log(
+                `Profit optimization applied - Potential daily profit: ${profitAnalysis.profit.estimatedDaily.toFixed(2)} refined`
+              );
+            }
           }
         }
 
@@ -1255,21 +1363,27 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
 
           // Use anomaly detection to filter out suspicious prices
           const anomalies = mlPredictor.detectAnomalies(priceHistory);
-          if (anomalies.anomalies.length > priceHistory.length * 0.3) {
+          if (
+            anomalies &&
+            anomalies.anomalies &&
+            anomalies.anomalies.length > priceHistory.length * 0.3
+          ) {
             console.log(`High anomaly rate detected for ${name}, applying conservative pricing`);
             estimationResult.confidence.confidence *= 0.8; // Reduce confidence
           }
 
           // Use momentum analysis for trend-aware adjustments
           const momentum = mlPredictor.calculateMomentum(priceHistory);
-          if (momentum.rsi < 30) {
-            // Oversold condition - slightly favor buy side
-            estimationResult.buyPrice *= 0.98;
-            console.log(`Oversold momentum detected for ${name}, favoring buy side`);
-          } else if (momentum.rsi > 70) {
-            // Overbought condition - slightly favor sell side
-            estimationResult.sellPrice *= 1.02;
-            console.log(`Overbought momentum detected for ${name}, favoring sell side`);
+          if (momentum && typeof momentum.rsi === 'number') {
+            if (momentum.rsi < 30) {
+              // Oversold condition - slightly favor buy side
+              estimationResult.buyPrice *= 0.98;
+              console.log(`Oversold momentum detected for ${name}, favoring buy side`);
+            } else if (momentum.rsi > 70) {
+              // Overbought condition - slightly favor sell side
+              estimationResult.sellPrice *= 1.02;
+              console.log(`Overbought momentum detected for ${name}, favoring sell side`);
+            }
           }
         }
 
@@ -1280,11 +1394,15 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
         ) {
           // Apply dynamic bounds
           if (dynamicBounds) {
-            const bounds = dynamicBounds.calculateDynamicBounds(
-              estimationResult.buyPrice,
-              estimationResult.sellPrice,
-              { priceHistory, buyListings: buyFiltered, sellListings: sellFiltered }
-            );
+            const bounds = dynamicBounds.calculateDynamicBounds({
+              sku,
+              basePrice: (estimationResult.buyPrice + estimationResult.sellPrice) / 2,
+              priceHistory,
+              buyCount: buyFiltered.length,
+              sellCount: sellFiltered.length,
+              buyListings: buyFiltered,
+              sellListings: sellFiltered,
+            });
 
             estimationResult.buyPrice = Math.max(estimationResult.buyPrice, bounds.minBuy);
             estimationResult.sellPrice = Math.min(estimationResult.sellPrice, bounds.maxSell);
@@ -1299,6 +1417,9 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           if (buyMetal < sellMetal) {
             console.log(
               `Tier 1 success - Buy: ${estimationResult.buyPrice}, Sell: ${estimationResult.sellPrice}, Confidence: ${estimationResult.confidence.grade}`
+            );
+            console.log(
+              `✅ Final prices for ${name}: BUY={keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}} | SELL={keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
             );
             return [final_buyObj, final_sellObj];
           }
@@ -1317,10 +1438,12 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           if (buyFiltered.length >= 3) {
             // Calculate strong buy side
             const buyVWAP = advancedPricing.calculateVWAP(
-              buyFiltered.map((listing) => ({
-                price: Methods.toMetal(listing.currencies, keyobj.metal),
-                volume: 1, // Proxy volume
-              }))
+              buyFiltered
+                .filter((listing) => listing && listing.currencies)
+                .map((listing) => ({
+                  price: Methods.toMetal(listing.currencies, keyobj.metal),
+                  volume: 1, // Proxy volume
+                }))
             );
             buyPrice = buyVWAP;
           }
@@ -1328,10 +1451,12 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           if (sellFiltered.length >= 3) {
             // Calculate strong sell side
             const sellVWAP = advancedPricing.calculateVWAP(
-              sellFiltered.map((listing) => ({
-                price: Methods.toMetal(listing.currencies, keyobj.metal),
-                volume: 1, // Proxy volume
-              }))
+              sellFiltered
+                .filter((listing) => listing && listing.currencies)
+                .map((listing) => ({
+                  price: Methods.toMetal(listing.currencies, keyobj.metal),
+                  volume: 1, // Proxy volume
+                }))
             );
             sellPrice = sellVWAP;
           }
@@ -1339,28 +1464,34 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           // Generate missing side using synthetic pricing
           if (buyPrice && !sellPrice && sellFiltered.length > 0) {
             // Use available sell data plus synthetic generation
-            const availableSellPrice = Methods.toMetal(sellFiltered[0].currencies, keyobj.metal);
-            const historicalSpread = Math.abs(buyPrice - availableSellPrice) / buyPrice;
+            const validSellListing = sellFiltered.find((listing) => listing && listing.currencies);
+            if (validSellListing) {
+              const availableSellPrice = Methods.toMetal(validSellListing.currencies, keyobj.metal);
+              const historicalSpread = Math.abs(buyPrice - availableSellPrice) / buyPrice;
 
-            const syntheticResult = advancedPricing.generateSyntheticPrice(
-              buyPrice,
-              'sell',
-              { historicalSpread: Math.max(0.1, historicalSpread) },
-              0.6
-            );
-            sellPrice = syntheticResult.price;
+              const syntheticResult = advancedPricing.generateSyntheticPrice(
+                buyPrice,
+                'sell',
+                { historicalSpread: Math.max(0.1, historicalSpread) },
+                0.6
+              );
+              sellPrice = syntheticResult.price;
+            }
           } else if (sellPrice && !buyPrice && buyFiltered.length > 0) {
             // Use available buy data plus synthetic generation
-            const availableBuyPrice = Methods.toMetal(buyFiltered[0].currencies, keyobj.metal);
-            const historicalSpread = Math.abs(sellPrice - availableBuyPrice) / sellPrice;
+            const validBuyListing = buyFiltered.find((listing) => listing && listing.currencies);
+            if (validBuyListing) {
+              const availableBuyPrice = Methods.toMetal(validBuyListing.currencies, keyobj.metal);
+              const historicalSpread = Math.abs(sellPrice - availableBuyPrice) / sellPrice;
 
-            const syntheticResult = advancedPricing.generateSyntheticPrice(
-              sellPrice,
-              'buy',
-              { historicalSpread: Math.max(0.1, historicalSpread) },
-              0.6
-            );
-            buyPrice = syntheticResult.price;
+              const syntheticResult = advancedPricing.generateSyntheticPrice(
+                sellPrice,
+                'buy',
+                { historicalSpread: Math.max(0.1, historicalSpread) },
+                0.6
+              );
+              buyPrice = syntheticResult.price;
+            }
           }
 
           if (buyPrice && sellPrice && buyPrice < sellPrice) {
@@ -1369,6 +1500,9 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
 
             console.log(
               `Tier 2 success - Asymmetric pricing, buy: ${buyPrice.toFixed(2)}, sell: ${sellPrice.toFixed(2)}`
+            );
+            console.log(
+              `✅ Final prices for ${name}: BUY={keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}} | SELL={keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
             );
             return [final_buyObj, final_sellObj];
           }
@@ -1418,6 +1552,9 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
             final_sellObj = Methods.fromMetal(sellPrice, keyobj.metal);
 
             console.log(`Tier 3 success - Trend-based pricing, R²: ${trendAnalysis.r2.toFixed(3)}`);
+            console.log(
+              `✅ Final prices for ${name}: BUY={keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}} | SELL={keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
+            );
             return [final_buyObj, final_sellObj];
           }
         } catch (e) {
@@ -1468,10 +1605,14 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
         final_sellObj = Methods.fromMetal(sellPrice, keyobj.metal);
 
         console.log(`Tier 4 success - Minimum viable pricing used`);
+        console.log(
+          `✅ Final prices for ${name}: BUY={keys: ${final_buyObj.keys}, metal: ${final_buyObj.metal}} | SELL={keys: ${final_sellObj.keys}, metal: ${final_sellObj.metal}}`
+        );
         return [final_buyObj, final_sellObj];
       }
     } catch (enhancedError) {
       console.log(`Enhanced pricing failed for ${name}: ${enhancedError.message}`);
+      console.log(`Stack trace:`, enhancedError.stack);
     }
 
     // Traditional pricing method fallback
@@ -1485,7 +1626,7 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
         for (let i = 0; i <= Math.min(2, buyFiltered.length - 1); i++) {
           prices.push(Methods.toMetal(buyFiltered[i].currencies, keyobj.metal));
         }
-        
+
         // Use robust estimation if available and we have enough data
         let avgPrice;
         if (prices.length >= 3 && priceDiscoveryEngine && priceDiscoveryEngine.robustEstimators) {
@@ -1498,7 +1639,7 @@ const getEnhancedAverages = async (name, buyFiltered, sellFiltered, sku, pricetf
           avgPrice = prices.reduce((sum, p) => sum + p, 0) / prices.length;
           console.log(`DEBUG: Key buy price (3-9 listings) - keys: 0, metal: ${avgPrice}`);
         }
-        
+
         final_buyObj = {
           keys: 0,
           metal: avgPrice,

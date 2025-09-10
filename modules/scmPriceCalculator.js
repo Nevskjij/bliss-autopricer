@@ -1,4 +1,4 @@
-const Methods = require('../methods');
+const Methods = require('../lib/methods');
 const { getSCMPrice, getSCMKeyPrice } = require('./steamMarketFetcher');
 const EFFECTS = require('./unusualEffects');
 const methods = new Methods();
