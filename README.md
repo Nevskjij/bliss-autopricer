@@ -51,6 +51,7 @@ Visit the web interface at `http://localhost:3000` to manage your pricing!
 ## 🎯 Key Features
 
 ### Intelligent Pricing System
+
 - **📈 Live Listing Analysis**: Real-time backpack.tf listing data processing
 - **💰 Steam Community Market Integration**: SCM fallback pricing for rare/illiquid items
 - **🎪 Unusual Support**: Full pricing support for unusual items and special attributes
@@ -58,12 +59,14 @@ Visit the web interface at `http://localhost:3000` to manage your pricing!
 - **🔍 Outlier Detection**: Automatic filtering of suspicious listings
 
 ### Advanced Bot Management
+
 - **🔍 Auto-Discovery**: Finds all TF2Autobot installations automatically
 - **🔄 Easy Switching**: Switch between bots with a single click
 - **📊 Unified Dashboard**: Manage all your bots from one interface
 - **⚙️ Configuration Backup**: Safe configuration migration and backup
 
 ### Reliability & Performance
+
 - **🔌 WebSocket Health Monitoring**: Real-time connection status tracking
 - **♻️ Auto-Recovery**: Automatic reconnection when connections fail
 - **⚡ Rate Limiting**: Intelligent API request management
@@ -164,6 +167,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ for the TF2 trading community**
 
-*Continuing Jack Richards' Pricer with modern enhancements*
+_Continuing Jack Richards' Pricer with modern enhancements_
 
 </div>

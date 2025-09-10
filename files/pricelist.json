@@ -13,6 +13,20 @@
         "keys": 27,
         "metal": 0.22
       }
+    },
+    {
+      "name": "Mann Co. Supply Crate Key",
+      "sku": "5021;6",
+      "source": "bptf",
+      "buy": {
+        "keys": 0,
+        "metal": 52.22
+      },
+      "sell": {
+        "keys": 0,
+        "metal": 52.22
+      },
+      "time": 1756221225
     }
   ]
 }

@@ -5,6 +5,7 @@ Complete guide to managing multiple TF2Autobot instances with Bliss Autopricer.
 ## Overview
 
 The multi-bot system allows you to:
+
 - Manage multiple TF2Autobot instances from one interface
 - Switch between bots seamlessly
 - Configure different pricing strategies per bot
@@ -19,6 +20,7 @@ npm run setup
 ```
 
 This will scan common locations:
+
 - Current directory and subdirectories
 - Parent directories
 - Common installation paths
@@ -42,7 +44,7 @@ Edit `pricerConfig.json`:
     "unusual-bot": {
       "name": "Unusual Specialist",
       "tf2autobotPath": "/path/to/tf2autobot-unusual",
-      "botDirectory": "files/unusual-bot", 
+      "botDirectory": "files/unusual-bot",
       "description": "Specialized bot for unusual trading"
     },
     "key-bot": {
@@ -60,22 +62,24 @@ Edit `pricerConfig.json`:
 Each bot can have different settings in their respective `config.json` files:
 
 #### Main Bot (`/path/to/tf2autobot/files/main-bot/config.json`)
+
 ```json
 {
   "bptfAccessToken": "main_bot_token",
   "bptfApiKey": "main_bot_api_key",
   "pricingStrategy": {
     "scmFallback": true,
-    "scmMarginBuy": 0.10,
+    "scmMarginBuy": 0.1,
     "scmMarginSell": 0.15
   }
 }
 ```
 
 #### Unusual Bot (`/path/to/tf2autobot-unusual/files/unusual-bot/config.json`)
+
 ```json
 {
-  "bptfAccessToken": "unusual_bot_token", 
+  "bptfAccessToken": "unusual_bot_token",
   "bptfApiKey": "unusual_bot_api_key",
   "pricingStrategy": {
     "scmFallback": false,
@@ -97,6 +101,7 @@ Each bot can have different settings in their respective `config.json` files:
 ### Bot Status Dashboard
 
 The bot config page shows:
+
 - **Active Bot**: Currently selected bot
 - **Bot List**: All configured bots with status
 - **Health Checks**: Connection status for each bot
@@ -146,14 +151,14 @@ The auto-discovery process:
     "aggressive-bot": {
       "pricingStrategy": {
         "scmMarginBuy": 0.05,
-        "scmMarginSell": 0.20,
+        "scmMarginSell": 0.2,
         "aggressivePricing": true
       }
     },
     "conservative-bot": {
       "pricingStrategy": {
         "scmMarginBuy": 0.15,
-        "scmMarginSell": 0.10,
+        "scmMarginSell": 0.1,
         "safetyMargins": true
       }
     }
@@ -172,7 +177,7 @@ The auto-discovery process:
       "group": "production"
     },
     "test-bot": {
-      "name": "Test Bot", 
+      "name": "Test Bot",
       "tags": ["testing", "development"],
       "group": "development"
     }
@@ -187,6 +192,7 @@ The auto-discovery process:
 **Symptoms**: Bot doesn't appear in auto-discovery
 
 **Solutions**:
+
 1. Verify TF2Autobot installation is complete
 2. Check `files/` directory exists
 3. Ensure `config.json` is valid JSON
@@ -197,6 +203,7 @@ The auto-discovery process:
 **Symptoms**: Settings not applying to correct bot
 
 **Solutions**:
+
 1. Check `selectedBot` in `pricerConfig.json`
 2. Verify bot paths are correct
 3. Restart autopricer after configuration changes
@@ -207,6 +214,7 @@ The auto-discovery process:
 **Symptoms**: Cannot read/write bot files
 
 **Solutions**:
+
 1. Check file permissions on bot directories
 2. Ensure autopricer has read/write access
 3. Run with appropriate user permissions
@@ -217,11 +225,13 @@ The auto-discovery process:
 If you're upgrading from a single-bot setup:
 
 1. **Backup existing configuration**:
+
    ```bash
    cp config.json config.json.backup
    ```
 
 2. **Run migration**:
+
    ```bash
    npm run setup
    ```
@@ -234,18 +244,21 @@ If you're upgrading from a single-bot setup:
 ## Best Practices
 
 ### Organization
+
 - Use descriptive bot names
 - Group related bots together
 - Tag bots by function or strategy
 - Document bot purposes in descriptions
 
 ### Security
+
 - Use separate API keys for each bot
 - Limit file permissions appropriately
 - Monitor bot access logs
 - Regular configuration backups
 
 ### Performance
+
 - Don't run too many bots simultaneously
 - Monitor system resources
 - Use different databases for isolation
@@ -254,26 +267,29 @@ If you're upgrading from a single-bot setup:
 ## API Integration
 
 ### Get Current Bot
+
 ```javascript
 fetch('/api/bot/current')
-  .then(res => res.json())
-  .then(bot => console.log('Active bot:', bot));
+  .then((res) => res.json())
+  .then((bot) => console.log('Active bot:', bot));
 ```
 
 ### Switch Bot
+
 ```javascript
 fetch('/api/bot/switch', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ botId: 'unusual-bot' })
+  body: JSON.stringify({ botId: 'unusual-bot' }),
 });
 ```
 
 ### List All Bots
+
 ```javascript
 fetch('/api/bots')
-  .then(res => res.json())
-  .then(bots => console.log('Available bots:', bots));
+  .then((res) => res.json())
+  .then((bots) => console.log('Available bots:', bots));
 ```
 
 ## Next Steps

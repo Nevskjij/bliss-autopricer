@@ -33,35 +33,35 @@ Complete reference for all Bliss Autopricer configuration options.
 
 ### Global Settings
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `selectedBot` | string | `null` | ID of currently active bot |
-| `port` | number | `3000` | Web interface port |
-| `ageThresholdSec` | number | `7200` | Time in seconds before prices are considered outdated |
+| Option            | Type   | Default | Description                                           |
+| ----------------- | ------ | ------- | ----------------------------------------------------- |
+| `selectedBot`     | string | `null`  | ID of currently active bot                            |
+| `port`            | number | `3000`  | Web interface port                                    |
+| `ageThresholdSec` | number | `7200`  | Time in seconds before prices are considered outdated |
 
 ### Bot Configuration
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `name` | string | Yes | Display name for the bot |
-| `tf2autobotPath` | string | Yes | Absolute path to TF2Autobot installation |
-| `botDirectory` | string | Yes | Relative path to bot's files directory |
-| `description` | string | No | Optional description of bot's purpose |
-| `tags` | array | No | Tags for organizing bots |
-| `group` | string | No | Group name for bot categorization |
+| Option           | Type   | Required | Description                              |
+| ---------------- | ------ | -------- | ---------------------------------------- |
+| `name`           | string | Yes      | Display name for the bot                 |
+| `tf2autobotPath` | string | Yes      | Absolute path to TF2Autobot installation |
+| `botDirectory`   | string | Yes      | Relative path to bot's files directory   |
+| `description`    | string | No       | Optional description of bot's purpose    |
+| `tags`           | array  | No       | Tags for organizing bots                 |
+| `group`          | string | No       | Group name for bot categorization        |
 
 ### Database Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `host` | string | `localhost` | PostgreSQL server hostname |
-| `port` | number | `5432` | PostgreSQL server port |
-| `database` | string | Required | Database name |
-| `user` | string | Required | Database username |
-| `password` | string | Required | Database password |
-| `ssl` | boolean | `false` | Enable SSL connection |
-| `connectionTimeoutMillis` | number | `5000` | Connection timeout |
-| `max` | number | `10` | Maximum connection pool size |
+| Option                    | Type    | Default     | Description                  |
+| ------------------------- | ------- | ----------- | ---------------------------- |
+| `host`                    | string  | `localhost` | PostgreSQL server hostname   |
+| `port`                    | number  | `5432`      | PostgreSQL server port       |
+| `database`                | string  | Required    | Database name                |
+| `user`                    | string  | Required    | Database username            |
+| `password`                | string  | Required    | Database password            |
+| `ssl`                     | boolean | `false`     | Enable SSL connection        |
+| `connectionTimeoutMillis` | number  | `5000`      | Connection timeout           |
+| `max`                     | number  | `10`        | Maximum connection pool size |
 
 ## Bot-Specific Configuration (`config.json`)
 
@@ -72,7 +72,7 @@ Each bot has its own `config.json` file in its directory with TF2Autobot setting
 ```json
 {
   "bptfAccessToken": "your_bptf_access_token",
-  "bptfApiKey": "your_bptf_api_key", 
+  "bptfApiKey": "your_bptf_api_key",
   "steamApiKey": "your_steam_api_key"
 }
 ```
@@ -83,10 +83,10 @@ Each bot has its own `config.json` file in its directory with TF2Autobot setting
 {
   "pricingStrategy": {
     "scmFallback": true,
-    "scmMarginBuy": 0.10,
+    "scmMarginBuy": 0.1,
     "scmMarginSell": 0.15,
     "bptfFallback": true,
-    "outlierThreshold": 0.30,
+    "outlierThreshold": 0.3,
     "minListings": 3,
     "maxAge": 86400,
     "unusualPricing": false,
@@ -98,35 +98,26 @@ Each bot has its own `config.json` file in its directory with TF2Autobot setting
 
 ### Pricing Strategy Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `scmFallback` | boolean | `true` | Enable Steam Community Market fallback pricing |
-| `scmMarginBuy` | number | `0.10` | Buy margin for SCM prices (10% = 0.10) |
-| `scmMarginSell` | number | `0.15` | Sell margin for SCM prices (15% = 0.15) |
-| `bptfFallback` | boolean | `true` | Enable backpack.tf fallback pricing |
-| `outlierThreshold` | number | `0.30` | Threshold for filtering outlier listings |
-| `minListings` | number | `3` | Minimum listings required for pricing |
-| `maxAge` | number | `86400` | Maximum age of listings to consider (seconds) |
-| `unusualPricing` | boolean | `false` | Enable special unusual pricing logic |
-| `aggressivePricing` | boolean | `false` | Use more aggressive pricing strategy |
-| `safetyMargins` | boolean | `true` | Apply additional safety margins |
+| Option              | Type    | Default | Description                                    |
+| ------------------- | ------- | ------- | ---------------------------------------------- |
+| `scmFallback`       | boolean | `true`  | Enable Steam Community Market fallback pricing |
+| `scmMarginBuy`      | number  | `0.10`  | Buy margin for SCM prices (10% = 0.10)         |
+| `scmMarginSell`     | number  | `0.15`  | Sell margin for SCM prices (15% = 0.15)        |
+| `bptfFallback`      | boolean | `true`  | Enable backpack.tf fallback pricing            |
+| `outlierThreshold`  | number  | `0.30`  | Threshold for filtering outlier listings       |
+| `minListings`       | number  | `3`     | Minimum listings required for pricing          |
+| `maxAge`            | number  | `86400` | Maximum age of listings to consider (seconds)  |
+| `unusualPricing`    | boolean | `false` | Enable special unusual pricing logic           |
+| `aggressivePricing` | boolean | `false` | Use more aggressive pricing strategy           |
+| `safetyMargins`     | boolean | `true`  | Apply additional safety margins                |
 
 ### Trusted/Blacklisted Users
 
 ```json
 {
-  "trustedSteamIDs": [
-    "76561198012345678",
-    "76561198087654321"
-  ],
-  "blacklistedSteamIDs": [
-    "76561198999999999"
-  ],
-  "excludedDescriptions": [
-    "spelled",
-    "haunted",
-    "cursed"
-  ]
+  "trustedSteamIDs": ["76561198012345678", "76561198087654321"],
+  "blacklistedSteamIDs": ["76561198999999999"],
+  "excludedDescriptions": ["spelled", "haunted", "cursed"]
 }
 ```
 
@@ -162,18 +153,21 @@ Each bot has its own `config.json` file in its directory with TF2Autobot setting
 You can override configuration using environment variables:
 
 ### Database
+
 - `DB_HOST` - Database hostname
-- `DB_PORT` - Database port 
+- `DB_PORT` - Database port
 - `DB_NAME` - Database name
 - `DB_USER` - Database username
 - `DB_PASSWORD` - Database password
 
 ### Application
+
 - `PRICE_WATCHER_PORT` - Web interface port
 - `NODE_ENV` - Environment (development/production)
 - `LOG_LEVEL` - Logging level (debug/info/warn/error)
 
 ### API Keys
+
 - `BPTF_ACCESS_TOKEN` - Backpack.tf access token
 - `BPTF_API_KEY` - Backpack.tf API key
 - `STEAM_API_KEY` - Steam API key
@@ -221,9 +215,7 @@ You can override configuration using environment variables:
 {
   "monitoring": {
     "enableHealthChecks": true,
-    "alertWebhooks": [
-      "https://discord.com/api/webhooks/..."
-    ],
+    "alertWebhooks": ["https://discord.com/api/webhooks/..."],
     "alerts": {
       "priceDeviation": 0.25,
       "connectionFailures": 3,
@@ -238,16 +230,19 @@ You can override configuration using environment variables:
 The configuration is validated against a JSON schema. Key validation rules:
 
 ### Required Fields
+
 - `selectedBot` must exist in `bots` object
 - Each bot must have `name`, `tf2autobotPath`, and `botDirectory`
 - Database configuration must include all connection details
 
 ### Path Validation
+
 - `tf2autobotPath` must be absolute path
 - `botDirectory` must be relative path
 - Paths must exist and be accessible
 
 ### Type Validation
+
 - Port numbers must be valid integers (1-65535)
 - Margins must be numbers between 0 and 1
 - Boolean values must be true/false
@@ -271,7 +266,7 @@ Old single-bot configuration is automatically migrated:
   "bots": {
     "migrated-bot": {
       "name": "Migrated Bot",
-      "tf2autobotPath": "/path/to/bot", 
+      "tf2autobotPath": "/path/to/bot",
       "botDirectory": "files/bot1"
     }
   }
@@ -292,18 +287,21 @@ Configuration version is tracked for future migrations:
 ## Best Practices
 
 ### Security
+
 - Store sensitive values in environment variables
 - Use strong database passwords
 - Limit file permissions on configuration files
 - Regularly rotate API keys
 
 ### Performance
+
 - Tune database connection pool size based on usage
 - Adjust rate limiting based on API quotas
 - Monitor memory usage with large bot configurations
 - Use caching for frequently accessed data
 
 ### Maintenance
+
 - Keep configuration files under version control
 - Document custom pricing rules
 - Regular backups of configuration
@@ -314,18 +312,21 @@ Configuration version is tracked for future migrations:
 ### Common Issues
 
 **Invalid JSON Syntax**
+
 ```bash
 # Validate JSON syntax
 node -e "console.log(JSON.parse(require('fs').readFileSync('pricerConfig.json')))"
 ```
 
 **Missing Required Fields**
+
 ```bash
 # Run configuration validation
 npm run validate-config
 ```
 
 **Path Issues**
+
 ```bash
 # Check if paths exist
 ls -la /path/to/tf2autobot
@@ -333,6 +334,7 @@ ls -la /path/to/tf2autobot/files/bot1
 ```
 
 **Database Connection**
+
 ```bash
 # Test database connection
 psql -U autopricer -d tf2autopricer -h localhost -c "SELECT 1;"

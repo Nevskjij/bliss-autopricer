@@ -27,6 +27,7 @@ curl -I http://localhost:3000
 **Symptoms**: Getting 403 errors when fetching prices from backpack.tf
 
 **Causes**:
+
 - Invalid or missing backpack.tf API keys
 - Expired API tokens
 - Rate limiting
@@ -34,12 +35,14 @@ curl -I http://localhost:3000
 **Solutions**:
 
 1. **Verify API Keys**:
+
    ```bash
    # Check if keys are set in bot config
    grep -E "(bptfAccessToken|bptfApiKey)" /path/to/bot/config.json
    ```
 
 2. **Test API Keys**:
+
    ```bash
    # Test backpack.tf API access
    curl -H "Authorization: Token YOUR_ACCESS_TOKEN" \
@@ -47,6 +50,7 @@ curl -I http://localhost:3000
    ```
 
 3. **Regenerate Keys**:
+
    - Visit [backpack.tf/api/register](https://backpack.tf/api/register)
    - Generate new API key and access token
    - Update bot configuration
@@ -58,7 +62,8 @@ curl -I http://localhost:3000
 
 ### 🗄️ Database Connection Issues
 
-**Symptoms**: 
+**Symptoms**:
+
 - "Connection refused" errors
 - "Database does not exist" errors
 - Authentication failures
@@ -66,29 +71,34 @@ curl -I http://localhost:3000
 **Solutions**:
 
 1. **Check PostgreSQL Service**:
+
    ```bash
    # Windows
    net start postgresql-x64-16
-   
+
    # Linux/macOS
    sudo systemctl status postgresql
    brew services list | grep postgresql
    ```
 
 2. **Verify Database Exists**:
+
    ```bash
    psql -U postgres -c "\l" | grep tf2autopricer
    ```
 
 3. **Test Connection**:
+
    ```bash
    psql -U autopricer -d tf2autopricer -h localhost
    ```
 
 4. **Reset Database**:
+
    ```sql
    -- As postgres user
    DROP DATABASE IF EXISTS tf2autopricer;
+   
    CREATE DATABASE tf2autopricer OWNER autopricer;
    ```
 
@@ -108,6 +118,7 @@ curl -I http://localhost:3000
 ### 🔌 WebSocket Connection Problems
 
 **Symptoms**:
+
 - WebSocket disconnections
 - "Connection refused" in browser
 - Stale connection warnings
@@ -118,19 +129,21 @@ curl -I http://localhost:3000
    Visit: `http://localhost:3000/websocket-status`
 
 2. **Restart Services**:
+
    ```bash
    # Restart autopricer
    npm run dev
-   
+
    # If using PM2
    pm2 restart bliss-autopricer
    ```
 
 3. **Firewall Issues**:
+
    ```bash
    # Check if port is open
    netstat -an | grep :3000
-   
+
    # Test local connection
    telnet localhost 3000
    ```
@@ -144,6 +157,7 @@ curl -I http://localhost:3000
 ### 🤖 Bot Configuration Issues
 
 **Symptoms**:
+
 - "No bot selected" errors
 - Bot not found in interface
 - Configuration not loading
@@ -151,20 +165,23 @@ curl -I http://localhost:3000
 **Solutions**:
 
 1. **Re-run Setup**:
+
    ```bash
    npm run setup
    ```
 
 2. **Verify Bot Paths**:
+
    ```bash
    # Check if bot directory exists
    ls -la /path/to/tf2autobot/files/bot1/
-   
+
    # Verify config.json exists
    cat /path/to/tf2autobot/files/bot1/config.json
    ```
 
 3. **Check Configuration Format**:
+
    ```bash
    # Validate JSON syntax
    node -e "console.log(JSON.parse(require('fs').readFileSync('pricerConfig.json')))"
@@ -187,6 +204,7 @@ curl -I http://localhost:3000
 ### 📊 Price Data Issues
 
 **Symptoms**:
+
 - No prices being generated
 - Outdated prices
 - Missing items in pricelist
@@ -194,18 +212,21 @@ curl -I http://localhost:3000
 **Solutions**:
 
 1. **Check Item List**:
+
    ```bash
    # Verify item_list.json exists and is valid
    node -e "console.log(JSON.parse(require('fs').readFileSync('files/item_list.json')))"
    ```
 
 2. **Check API Connectivity**:
+
    ```bash
    # Test backpack.tf API
    curl "https://backpack.tf/api/classifieds/search/v1?sku=5021;6"
    ```
 
 3. **Review Logs**:
+
    ```bash
    # Check for pricing errors
    tail -f logs/autopricer.log | grep -i error
@@ -219,6 +240,7 @@ curl -I http://localhost:3000
 ### 🐛 Application Crashes
 
 **Symptoms**:
+
 - Process exits unexpectedly
 - Out of memory errors
 - Unhandled exceptions
@@ -226,21 +248,24 @@ curl -I http://localhost:3000
 **Solutions**:
 
 1. **Check Logs**:
+
    ```bash
    # Check PM2 logs
    pm2 logs bliss-autopricer
-   
+
    # Check system logs
    tail -f /var/log/syslog | grep autopricer
    ```
 
 2. **Memory Issues**:
+
    ```bash
    # Increase Node.js memory limit
    node --max-old-space-size=2048 bptf-autopricer.js
    ```
 
 3. **Dependency Issues**:
+
    ```bash
    # Reinstall dependencies
    rm -rf node_modules package-lock.json
@@ -273,13 +298,28 @@ npm run dev
 
 ```sql
 -- Check recent prices
-SELECT * FROM tf2.prices ORDER BY created_at DESC LIMIT 10;
+SELECT
+  *
+FROM
+  tf2.prices
+ORDER BY
+  created_at DESC
+LIMIT
+  10;
 
 -- Check key prices
-SELECT * FROM tf2.key_prices ORDER BY created_at DESC LIMIT 10;
+SELECT
+  *
+FROM
+  tf2.key_prices
+ORDER BY
+  created_at DESC
+LIMIT
+  10;
 
 -- Check database size
-SELECT pg_size_pretty(pg_database_size('tf2autopricer'));
+SELECT
+  pg_size_pretty (pg_database_size ('tf2autopricer'));
 ```
 
 ### Network Debugging
@@ -313,6 +353,7 @@ df -h
 ### Slow Price Updates
 
 **Causes**:
+
 - Large item lists
 - Network latency
 - Database performance
@@ -321,16 +362,19 @@ df -h
 **Solutions**:
 
 1. **Optimize Database**:
+
    ```sql
    -- Add indexes
-   CREATE INDEX IF NOT EXISTS idx_prices_sku ON tf2.prices(sku);
-   CREATE INDEX IF NOT EXISTS idx_prices_created ON tf2.prices(created_at);
+   CREATE INDEX IF NOT EXISTS idx_prices_sku ON tf2.prices (sku);
+   
+   CREATE INDEX IF NOT EXISTS idx_prices_created ON tf2.prices (created_at);
    
    -- Analyze tables
    ANALYZE tf2.prices;
    ```
 
 2. **Batch Processing**:
+
    ```json
    {
      "batching": {
@@ -356,6 +400,7 @@ df -h
 **Solutions**:
 
 1. **Garbage Collection**:
+
    ```bash
    node --expose-gc --max-old-space-size=2048 bptf-autopricer.js
    ```
@@ -367,7 +412,7 @@ df -h
      const used = process.memoryUsage();
      console.log('Memory usage:', {
        rss: Math.round(used.rss / 1024 / 1024) + 'MB',
-       heapUsed: Math.round(used.heapUsed / 1024 / 1024) + 'MB'
+       heapUsed: Math.round(used.heapUsed / 1024 / 1024) + 'MB',
      });
    }, 60000);
    ```
@@ -376,22 +421,22 @@ df -h
 
 ### HTTP Status Codes
 
-| Code | Meaning | Common Causes |
-|------|---------|---------------|
-| 403 | Forbidden | Invalid API keys, rate limiting |
-| 404 | Not Found | Missing endpoints, incorrect URLs |
-| 500 | Internal Server Error | Application bugs, database issues |
-| 502 | Bad Gateway | Proxy issues, service unavailable |
-| 503 | Service Unavailable | Maintenance, overload |
+| Code | Meaning               | Common Causes                     |
+| ---- | --------------------- | --------------------------------- |
+| 403  | Forbidden             | Invalid API keys, rate limiting   |
+| 404  | Not Found             | Missing endpoints, incorrect URLs |
+| 500  | Internal Server Error | Application bugs, database issues |
+| 502  | Bad Gateway           | Proxy issues, service unavailable |
+| 503  | Service Unavailable   | Maintenance, overload             |
 
 ### Application Error Codes
 
-| Code | Description | Solution |
-|------|-------------|----------|
-| `ECONNREFUSED` | Connection refused | Check if service is running |
-| `ENOTFOUND` | DNS lookup failed | Check internet connection |
-| `EACCES` | Permission denied | Check file permissions |
-| `EMFILE` | Too many open files | Increase file descriptor limit |
+| Code           | Description         | Solution                       |
+| -------------- | ------------------- | ------------------------------ |
+| `ECONNREFUSED` | Connection refused  | Check if service is running    |
+| `ENOTFOUND`    | DNS lookup failed   | Check internet connection      |
+| `EACCES`       | Permission denied   | Check file permissions         |
+| `EMFILE`       | Too many open files | Increase file descriptor limit |
 
 ## Getting Help
 
@@ -435,18 +480,21 @@ tail -50 logs/autopricer.log
 If the autopricer is completely broken:
 
 1. **Stop all processes**:
+
    ```bash
    pm2 stop all
    pkill -f bptf-autopricer
    ```
 
 2. **Backup configuration**:
+
    ```bash
    cp pricerConfig.json pricerConfig.json.backup
    cp -r files/ files.backup/
    ```
 
 3. **Reset to clean state**:
+
    ```bash
    git stash
    git pull origin main
@@ -454,6 +502,7 @@ If the autopricer is completely broken:
    ```
 
 4. **Restore configuration**:
+
    ```bash
    cp pricerConfig.json.backup pricerConfig.json
    npm run validate-config
