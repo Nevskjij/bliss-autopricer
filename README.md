@@ -17,36 +17,23 @@ An advanced TF2 item pricing system that uses live backpack.tf listings and Stea
 
 ## 🚀 Quick Start
 
-**NEW: One-Command Setup with PostgreSQL Auto-Install!**
-
 ```bash
 # 1. Clone and install
 git clone https://github.com/OliverPerring/bliss-autopricer.git
 cd bliss-autopricer
 npm install
 
-# 2. Run the automated setup (handles everything!)
-npm run setup
-```
+# 2. Run the universal setup
+cd setup
+node universal-setup.js
 
-This will:
-
-- ✅ **Check and install PostgreSQL** if needed (Windows/macOS/Linux)
-- ✅ **Create database and user** automatically
-- ✅ **Auto-discover your TF2Autobot installations**
-- ✅ **Configure multi-bot support** with web management
-- ✅ **Walk you through API key setup**
-- ✅ **Validate your configuration**
-
-Then simply start the autopricer:
-
-```bash
+# 3. Start the autopricer
 npm start
 ```
 
-Visit the web interface at `http://localhost:3000` to manage your pricing!
+**That's it!** The universal setup script works on all platforms (Windows, macOS, Linux, WSL, SSH) and handles everything automatically. Visit `http://localhost:3000` to manage your pricing.
 
-**No more manual PostgreSQL setup or complex configuration!**
+📖 **Need help?** See [`docs/QUICK_SETUP.md`](docs/QUICK_SETUP.md) for troubleshooting and [`docs/INSTALLATION.md`](docs/INSTALLATION.md) for detailed guides.
 
 ## ✨ What's New in This Fork
 
@@ -98,7 +85,8 @@ Visit the web interface at `http://localhost:3000` to manage your pricing!
 
 ## 📖 Documentation
 
-- **[📦 Installation Guide](docs/INSTALLATION.md)** - Complete setup instructions
+- **[📦 Quick Setup](docs/QUICK_SETUP.md)** - One-page setup reference with troubleshooting
+- **[📦 Installation Guide](docs/INSTALLATION.md)** - Complete step-by-step setup instructions
 - **[🤖 Multi-Bot Setup](docs/MULTI-BOT.md)** - Managing multiple bots
 - **[⚙️ Configuration Reference](docs/CONFIGURATION.md)** - All configuration options
 - **[🔧 Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
@@ -128,8 +116,6 @@ Bliss Autopricer
     ├── Configuration
     └── Health Dashboard
 ```
-
-## 🔧 API Keys Setup
 
 ## 🧠 Enhanced Pricing System
 
@@ -163,13 +149,6 @@ Our advanced pricing algorithms ensure maximum item coverage and accuracy:
 - **Better accuracy** through multi-algorithm validation
 - **Risk protection** via outlier detection and dynamic bounds
 
-You'll need these API keys for full functionality:
-
-1. **Backpack.tf API Key**: Get from [backpack.tf/api/register](https://backpack.tf/api/register)
-2. **Steam API Key**: Get from [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)
-
-⚠️ **Important**: Without proper API keys, you may encounter 403 errors. The setup wizard will help you configure these correctly.
-
 ## 📊 Web Interface
 
 The web dashboard provides:
@@ -182,37 +161,9 @@ The web dashboard provides:
 - **⚙️ Enhanced Settings**: Configure pricing algorithms and thresholds
 - **🎯 Quality Control**: Monitor confidence levels and validation results
 
-## 📚 Documentation
-
-**NEW: Completely rewritten documentation with step-by-step guides!**
-
-- **[Installation Guide](docs/INSTALLATION.md)**: One-command setup with PostgreSQL auto-install
-- **[Multi-Bot Setup](docs/MULTI-BOT.md)**: Updated guide for the new ConfigManager system
-- **[Configuration Guide](docs/CONFIGURATION.md)**: Comprehensive settings reference
-- **[API Documentation](docs/API.md)**: REST API and WebSocket reference
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)**: Solutions for common issues
-
-The documentation has been completely updated to reflect the new auto-setup system and multi-bot management features.
-
 ## 🔄 Updating Your Installation
 
-**NEW: Automated Update Script!**
-
-Keep your autopricer current with the new update system:
-
-```bash
-npm run update
-```
-
-This will:
-
-- ✅ **Check for new versions** automatically
-- ✅ **Create automatic backups** of your configuration
-- ✅ **Update dependencies** safely
-- ✅ **Run database migrations** if needed
-- ✅ **Validate configuration** after update
-
-For manual updates:
+Keep your autopricer current:
 
 ```bash
 cd bliss-autopricer
@@ -220,7 +171,7 @@ git pull origin main
 npm install
 ```
 
-Your configuration files (`config/pricerConfig.json`, `files/`) will be preserved during updates.
+Your configuration files (`config/pricerConfig.json`, `data/`) will be preserved during updates.
 
 ## 🤝 Contributing
 

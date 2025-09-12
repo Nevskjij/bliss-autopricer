@@ -24,12 +24,9 @@
   "main": "bptf-autopricer.js",
   "scripts": {
     "dev": "node bptf-autopricer.js",
-    "setup": "node setup/setup.js",
-    "setup-bots": "node setup/setup-bots.js",
+    "setup": "node setup/universal-setup.js",
     "start": "node bptf-autopricer.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "update": "node setup/update.js",
-    "validate-config": "node setup/validate-config.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@tf2autobot/tf2-schema": "^4.3.0",

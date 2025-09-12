@@ -4,23 +4,25 @@
 
 ## 🚀 Quick Start (Recommended)
 
-The fastest way to get started is with our automated setup script:
+The fastest way to get started is with our universal setup script:
 
 ```bash
 git clone https://github.com/OliverPerring/bliss-autopricer.git
 cd bliss-autopricer
 npm install
-npm run setup
+cd setup
+node universal-setup.js
 ```
 
-This will:
+This single script works on **all platforms** (Windows, macOS, Linux, WSL, SSH) and will:
 
-- ✅ Check and install PostgreSQL if needed
-- ✅ Create database and user automatically
-- ✅ Auto-discover your TF2Autobot installations
-- ✅ Configure multi-bot support
+- ✅ Auto-detect your environment and platform
+- ✅ Install PostgreSQL if needed (with package manager detection)  
+- ✅ Fix authentication issues automatically
+- ✅ Find your bot directories intelligently
+- ✅ Create secure database credentials
 - ✅ Set up the web interface
-- ✅ Walk you through API key configuration
+- ✅ Provide platform-specific next steps
 
 ## 📋 Prerequisites
 
@@ -231,7 +233,7 @@ If no bots are found:
 On Linux/macOS, you may need to fix permissions:
 
 ```bash
-chmod +x setup.js
+chmod +x setup/universal-setup.js
 chmod -R 755 ./modules
 ```
 
